@@ -27,6 +27,40 @@ const dateToWeekIdx = (str,weeks) => { const d=parseDate(str);if(!d)return -1;co
 const csvSplit = line => { const cols=[];let c="",q=false;for(let i=0;i<=line.length;i++){const ch=i<line.length?line[i]:"";if(ch==='"'){q=!q;continue;}if((ch===","||i===line.length)&&!q){cols.push(c.trim());c="";}else c+=ch;}return cols; };
 const parseTable = text => { const lines=text.trim().split("\n").filter(l=>l.trim());if(lines.length<2)return[];const sep=lines[0].includes("\t")?"\t":",";const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,""));return lines.slice(1).map(line=>{const cols=sep==="\t"?line.split("\t").map(c=>c.trim()):csvSplit(line);const o={};hdrs.forEach((h,i)=>{o[h]=cols[i]||"";});return o;}); };
 
+// Parser for Invoicing report format
+const parseInvoicing = text => {
+  const lines = text.split("\n");
+  const hdrs = csvSplit(lines[0]).map(h=>h.trim().replace(/"/g,""));
+  const dateIdx = hdrs.indexOf("Date");
+  const clientIdx = hdrs.indexOf("Client Name");
+  const prodIdx = hdrs.indexOf("Service/Product");
+  const staffIdx = hdrs.indexOf("Staff");
+  const taxIdx = hdrs.indexOf("Tax");
+  const totalIdx = hdrs.indexOf("Total Due");
+  const amtIdx = hdrs.indexOf("Amount");
+  const cashInflowIdx = hdrs.indexOf("Cash Inflows");
+
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = csvSplit(lines[i]).map(c=>c.trim().replace(/^"|"$/g,""));
+    if(!cols[dateIdx]||!cols[dateIdx].trim()) continue;
+    const amt = parseAmt(cols[amtIdx]);
+    if(!amt || amt === 0) continue; // only rows where cash was actually received
+    const o = {};
+    hdrs.forEach((h,j)=>{o[h]=cols[j]||"";});
+    o["Date"] = cols[dateIdx]||"";
+    o["Client Name"] = cols[clientIdx]||"";
+    o["Service/Product"] = cols[prodIdx]||"";
+    o["Staff"] = cols[staffIdx]||"";
+    o["Tax"] = cols[taxIdx]||"";
+    o["Total Due"] = cols[amtIdx]||""; // use Amount (cash received) not Total Due
+    o["Cash Inflows"] = cols[cashInflowIdx]||"";
+    o["_rawAmt"] = amt;
+    rows.push(o);
+  }
+  return rows;
+};
+
 // Parser specifically for ANB transaction report format
 const parseANB = text => {
   const lines = text.split("\n");
@@ -213,12 +247,22 @@ export default function App() {
   };
   const classifyInv=row=>{
     if((row["Cash Inflows"]||"").trim())return{line:row["Cash Inflows"].trim(),conf:"mapped"};
-    const prod=(row["Service/Product"]||"").toLowerCase(),staff=(row["Staff"]||"").toLowerCase().trim();
-    const tax=parseAmt(row["Tax"]),total=parseAmt(row["Total Due"]);
-    if(!total)return{line:null,conf:"skip"};
-    for(const r of invRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>k&&prod.includes(k)))return{line:r.line,conf:"auto"};}
+    const prod=(row["Service/Product"]||"").toLowerCase();
+    const staff=(row["Staff"]||"").toLowerCase().trim();
+    const tax=parseAmt(row["Tax"]);
+    const amt=row["_rawAmt"]||parseAmt(row["Total Due"]);
+    if(!amt)return{line:null,conf:"skip"};
+    for(const r of invRules){
+      const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());
+      if(kws.some(k=>k&&prod.includes(k)))return{line:r.line,conf:"auto"};
+    }
     if(tax&&Math.abs(tax)>0)return{line:"Skincare Products",conf:"auto"};
     if(STAFF_MAP[staff])return{line:STAFF_MAP[staff],conf:"auto"};
+    // fallback: if staff is an injector, classify as Injectable/Skin Income
+    const injectors=["emily kurtz","taylor campbell"];
+    if(injectors.includes(staff))return{line:"Injectable/Skin Income",conf:"auto"};
+    const ests=["leah barr","rico alvarado"];
+    if(ests.includes(staff))return{line:"Esthetician Income",conf:"auto"};
     return{line:null,conf:"unknown"};
   };
 
@@ -264,15 +308,15 @@ export default function App() {
     setSyncLoading(s=>({...s,inv:true}));setSyncMsg(null);
     try{
       const text=await fetchSheet(GID.invoicing);
-      const rows=parseTable(text);
+      const rows=parseInvoicing(text);
       const wi=nextFcWeek;
       const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
       const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
       const classified=wRows.map(r=>{
         const {line,conf}=classifyInv(r);
-        const amt=parseAmt(r["Total Due"]);
+        const amt=r["_rawAmt"]||parseAmt(r["Total Due"]);
         return{...r,_line:line,_conf:conf,_amt:amt};
-      }).filter(r=>r._conf!=="skip"&&r._amt!==null);
+      }).filter(r=>r._conf!=="skip"&&r._amt);
       setReviewModal({type:"inv",wi,rows:classified});
     }catch(e){setSyncMsg(`Invoicing error: ${e.message}`);}
     setSyncLoading(s=>({...s,inv:false}));
