@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-// ── CONFIG ────────────────────────────────────────────────────────────────────
 const MAKE_WEBHOOK = "https://hook.us2.make.com/ixy5r7umily7fz8rq8big679w3vphlzo";
 const GID = { forecast:"0", anb:"1814362881", assumptions:"1862177871", invoicing:"1851109536" };
 const WEEKS_PER_PAGE = 13;
@@ -19,17 +18,15 @@ const WEEKS_INIT = [
 ];
 const NW = WEEKS_INIT.length;
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
 const fmt = v => { if(!v&&v!==0) return "-"; const a=Math.abs(v); return v<0?`(${a.toLocaleString("en-US",{maximumFractionDigits:0})})`:`${a.toLocaleString("en-US",{maximumFractionDigits:0})}`; };
 const fmtD = v => { if(!v&&v!==0) return "-"; return v<0?`▼ ${Math.abs(v).toLocaleString("en-US",{maximumFractionDigits:0})}`:`▲ ${v.toLocaleString("en-US",{maximumFractionDigits:0})}`; };
 const parseAmt = s => { if(!s&&s!==0) return null; const n=parseFloat(String(s).replace(/[$,\s()]/g,"")); return isNaN(n)?null:(String(s).includes("(")?-n:n); };
 const pad = (a,l) => { const r=[...a]; while(r.length<l) r.push(null); return r.slice(0,l); };
 const parseDate = str => { if(!str) return null; const m=str.match(/([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})/); if(m){const d=new Date(`${m[1]} ${m[2]} ${m[3]}`);return isNaN(d)?null:d;} const d=new Date(str);return isNaN(d)?null:d; };
-const dateToWeekIdx = (str,weeks) => { const d=parseDate(str);if(!d)return -1; const y=d.getFullYear(),mo=d.getMonth(),dy=d.getDate(); for(let i=0;i<weeks.length;i++){const s=new Date(weeks[i].s),e=new Date(weeks[i].e);const sy=s.getFullYear(),sm=s.getMonth(),sd=s.getDate(),ey=e.getFullYear(),em=e.getMonth(),ed=e.getDate();const ok1=(y>sy)||(y===sy&&mo>sm)||(y===sy&&mo===sm&&dy>=sd);const ok2=(y<ey)||(y===ey&&mo<em)||(y===ey&&mo===em&&dy<=ed);if(ok1&&ok2)return i;}return -1; };
+const dateToWeekIdx = (str,weeks) => { const d=parseDate(str);if(!d)return -1;const y=d.getFullYear(),mo=d.getMonth(),dy=d.getDate();for(let i=0;i<weeks.length;i++){const s=new Date(weeks[i].s),e=new Date(weeks[i].e);const sy=s.getFullYear(),sm=s.getMonth(),sd=s.getDate(),ey=e.getFullYear(),em=e.getMonth(),ed=e.getDate();const ok1=(y>sy)||(y===sy&&mo>sm)||(y===sy&&mo===sm&&dy>=sd);const ok2=(y<ey)||(y===ey&&mo<em)||(y===ey&&mo===em&&dy<=ed);if(ok1&&ok2)return i;}return -1; };
 const csvSplit = line => { const cols=[];let c="",q=false;for(let i=0;i<=line.length;i++){const ch=i<line.length?line[i]:"";if(ch==='"'){q=!q;continue;}if((ch===","||i===line.length)&&!q){cols.push(c.trim());c="";}else c+=ch;}return cols; };
 const parseTable = text => { const lines=text.trim().split("\n").filter(l=>l.trim());if(lines.length<2)return[];const sep=lines[0].includes("\t")?"\t":",";const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,""));return lines.slice(1).map(line=>{const cols=sep==="\t"?line.split("\t").map(c=>c.trim()):csvSplit(line);const o={};hdrs.forEach((h,i)=>{o[h]=cols[i]||"";});return o;}); };
 
-// ── DEFAULT MAPPING RULES ─────────────────────────────────────────────────────
 const DEFAULT_BANK_RULES = [
   {id:"b1",keywords:"5/3 bank,stripe,cherry,repeatmd",line:"Injectable/Skin Income"},
   {id:"b2",keywords:"trueaesthetics,true aesthetics",line:"TrueAesthetics"},
@@ -62,9 +59,9 @@ const OUT_MAP = {"TrueAesthetics":"ta","True Aesthetics (OKC)":"okc","Nitra":"ni
 const STAFF_MAP = {"taylor campbell":"Taylor Campbell","emily kurtz":"Emily Kurtz","leah barr":"Leah Barr","rico alvarado":"Rico Alvarado"};
 const STAFF_RATES = {"Emily Kurtz":3000,"Taylor Campbell":4800,"Leah Barr":1000,"Rico Alvarado":450};
 const TOX_PRICE=175, WL_PRICE=455;
-const ALL_LINES = [...Object.keys(IN_MAP),...Object.keys(OUT_MAP)];
+const ALL_IN_LINES = Object.keys(IN_MAP);
+const ALL_OUT_LINES = Object.keys(OUT_MAP);
 
-// ── INITIAL DATA ──────────────────────────────────────────────────────────────
 const INIT_IN=[
   {id:"inj",label:"Injectable/Skin Income",              v:pad([11464,20275,27483,22791,28862,31773,23413,21447,21104,28483],NW)},
   {id:"tc", label:"  Taylor Campbell",       sub:true,   v:pad([11464,6566,11163,11896,16005,15788,13591,5518,7257,14240],NW)},
@@ -75,7 +72,7 @@ const INIT_IN=[
   {id:"bhm",label:"BH Membership",                      v:pad([18000,null,null,12100,394,17075,null,275,null,17250],NW)},
   {id:"tox",label:"Tox Membership",                     v:pad([608,3955,34503,5123,1067,3066,1896,35963,1472,null],NW)},
   {id:"wlm",label:"Weightloss Membership",               v:pad([9775,2050,3855,null,null,11275,1341,4550,880,9480],NW)},
-  {id:"wel",label:"Wellness Membership",                v:pad([null,null,null,null,90,null,null,null,null,null],NW)},
+  {id:"wel",label:"Wellness Membership",                 v:pad([null,null,null,null,90,null,null,null,null,null],NW)},
   {id:"gft",label:"Gift Cards/Deposits Purchased",      v:pad([400,1375,525,2050,855,425,215,275,400,1025],NW)},
   {id:"cs", label:"CoolSculpting",                      v:pad([null,500,null,null,2300,null,null,null,null,null],NW)},
   {id:"skn",label:"Skincare Products",                  v:pad([5452,6163,4357,2720,7054,10039,4569,5159,6653,6311],NW)},
@@ -86,44 +83,43 @@ const INIT_IN=[
 ];
 const INIT_OUT=[
   {sec:"Inventory",rows:[
-    {id:"ta", label:"TrueAesthetics",         v:pad([7154,null,null,3408,22357,7135,3913,null,34819,13423],NW)},
-    {id:"okc",label:"True Aesthetics (OKC)",  v:pad([null,3369,17322,null,null,7154,null,null,null,null],NW)},
-    {id:"nit",label:"Nitra",                  v:pad([8000,10000,null,10000,10000,10000,10000,10000,10000,10000],NW)},
-    {id:"cap",label:"Capital One",            v:pad([null,null,null,14597,null,null,null,6522,null,null],NW)},
-    {id:"amx",label:"Amex",                   v:pad([null,null,9799,null,null,null,6859,null,null,null],NW)},
+    {id:"ta",   label:"TrueAesthetics",          v:pad([7154,null,null,3408,22357,7135,3913,null,34819,13423],NW)},
+    {id:"okc",  label:"True Aesthetics (OKC)",   v:pad([null,3369,17322,null,null,7154,null,null,null,null],NW)},
+    {id:"nit",  label:"Nitra",                   v:pad([8000,10000,null,10000,10000,10000,10000,10000,10000,10000],NW)},
+    {id:"cap",  label:"Capital One",             v:pad([null,null,null,14597,null,null,null,6522,null,null],NW)},
+    {id:"amx",  label:"Amex",                    v:pad([null,null,9799,null,null,null,6859,null,null,null],NW)},
   ]},
   {sec:"Personnel",rows:[
-    {id:"wag",label:"Wages",                  v:pad([null,15293,null,13169,null,17152,null,12174,null,16694],NW)},
-    {id:"pt", label:"Payroll Taxes",          v:pad([null,8091,null,16296,null,10437,null,6117,9614,10027],NW)},
-    {id:"pf", label:"Payroll Fees",           v:pad([null,250,null,null,null,null,200,null,null,25],NW)},
-    {id:"ben",label:"Benefits",               v:pad([null,null,5238,null,35,null,4837,null,null,35],NW)},
+    {id:"wag",  label:"Wages",                   v:pad([null,15293,null,13169,null,17152,null,12174,null,16694],NW)},
+    {id:"pt",   label:"Payroll Taxes",           v:pad([null,8091,null,16296,null,10437,null,6117,9614,10027],NW)},
+    {id:"pf",   label:"Payroll Fees",            v:pad([null,250,null,null,null,null,200,null,null,25],NW)},
+    {id:"ben",  label:"Benefits",                v:pad([null,null,5238,null,35,null,4837,null,null,35],NW)},
   ]},
   {sec:"Facilities",rows:[
-    {id:"rnt",label:"Rent",                   v:pad([null,5630,null,null,null,5626,null,null,null,5630],NW)},
-    {id:"utl",label:"Utilities",              v:pad([null,504,null,null,null,551,null,null,null,null],NW)},
+    {id:"rnt",  label:"Rent",                    v:pad([null,5630,null,null,null,5626,null,null,null,5630],NW)},
+    {id:"utl",  label:"Utilities",               v:pad([null,504,null,null,null,551,null,null,null,null],NW)},
   ]},
   {sec:"Services",rows:[
-    {id:"acc",label:"Accounting",             v:pad([6334,null,null,null,null,null,null,null,null,null],NW)},
-    {id:"okcloc",label:"OKC Location",        v:pad([null,2000,null,null,null,null,null,null,null,null],NW)},
+    {id:"acc",  label:"Accounting",              v:pad([6334,null,null,null,null,null,null,null,null,null],NW)},
+    {id:"okcloc",label:"OKC Location",           v:pad([null,2000,null,null,null,null,null,null,null,null],NW)},
   ]},
   {sec:"Other Expenses",rows:[
-    {id:"bkf",label:"Bank & Merchant Fees",   v:pad([null,7531,null,null,null,6974,null,null,null,7398],NW)},
-    {id:"ins",label:"Insurance",              v:pad([null,353,1638,null,null,353,1638,null,null,353],NW)},
-    {id:"cl", label:"Car Loan",               v:pad([null,1783,null,null,null,1783,null,null,null,1783],NW)},
-    {id:"tax",label:"Taxes & Licenses",       v:pad([null,null,null,1501,167,null,32,894,3044,576],NW)},
-    {id:"misc",label:"Misc - TBD",            v:pad([60,309,78,920,450,60,815,157,632,836],NW)},
-    {id:"dist",label:"Personal/Distributions",v:pad([1133,8165,382,null,90,8303,88,null,null,8303],NW)},
-    {id:"dues",label:"Dues & Subscriptions",  v:pad([null,null,null,null,50,null,null,null,50,null],NW)},
-    {id:"rm",  label:"Repairs & Maintenance", v:pad([965,null,965,null,965,null,null,965,null,null],NW)},
-    {id:"imgf",label:"Image First",           v:pad([null,null,842,null,null,210,null,842,null,null],NW)},
-    {id:"soft",label:"Software",              v:pad([130,null,null,null,null,null,90,null,null,null],NW)},
-    {id:"trvl",label:"Travel Expenses",       v:pad([13,null,49,null,13,null,null,49,13,null],NW)},
-    {id:"ofc", label:"Office Supplies",       v:pad([null,null,null,41,null,null,null,null,null,null],NW)},
+    {id:"bkf",  label:"Bank & Merchant Fees",    v:pad([null,7531,null,null,null,6974,null,null,null,7398],NW)},
+    {id:"ins",  label:"Insurance",               v:pad([null,353,1638,null,null,353,1638,null,null,353],NW)},
+    {id:"cl",   label:"Car Loan",                v:pad([null,1783,null,null,null,1783,null,null,null,1783],NW)},
+    {id:"tax",  label:"Taxes & Licenses",        v:pad([null,null,null,1501,167,null,32,894,3044,576],NW)},
+    {id:"misc", label:"Misc - TBD",              v:pad([60,309,78,920,450,60,815,157,632,836],NW)},
+    {id:"dist", label:"Personal/Distributions",  v:pad([1133,8165,382,null,90,8303,88,null,null,8303],NW)},
+    {id:"dues", label:"Dues & Subscriptions",    v:pad([null,null,null,null,50,null,null,null,50,null],NW)},
+    {id:"rm",   label:"Repairs & Maintenance",   v:pad([965,null,965,null,965,null,null,965,null,null],NW)},
+    {id:"imgf", label:"Image First",             v:pad([null,null,842,null,null,210,null,842,null,null],NW)},
+    {id:"soft", label:"Software",                v:pad([130,null,null,null,null,null,90,null,null,null],NW)},
+    {id:"trvl", label:"Travel Expenses",         v:pad([13,null,49,null,13,null,null,49,13,null],NW)},
+    {id:"ofc",  label:"Office Supplies",         v:pad([null,null,null,41,null,null,null,null,null,null],NW)},
   ]},
 ];
 const BB_INIT = pad([49856,33794,21705,20611,36427,21939,17545,17547,50978,27790],NW);
 
-// ── FORECAST PARSERS ──────────────────────────────────────────────────────────
 const parseFcExpenses = (text,weeks) => {
   const totals={};Object.values(OUT_MAP).forEach(id=>{totals[id]=pad([],NW);});
   text.split("\n").forEach((line,li)=>{if(li===0||!line.trim())return;const cols=csvSplit(line);if(cols.length<5)return;const mapRaw=(cols[4]||"").replace(/^"|"$/g,"").trim();const amt=Math.abs(parseFloat((cols[3]||"").replace(/[^0-9.]/g,""))||0);const dateStr=(cols[2]||"").trim();if(!mapRaw||!amt)return;const outKey=Object.keys(OUT_MAP).find(k=>k.trim().toLowerCase()===mapRaw.toLowerCase());if(!outKey)return;const wi=dateToWeekIdx(dateStr,weeks);if(wi>=0&&wi<NW&&weeks[wi].fc)totals[OUT_MAP[outKey]][wi]=(totals[OUT_MAP[outKey]][wi]||0)+amt;});
@@ -140,7 +136,6 @@ const parseFcInflows = (text,weeks) => {
   Object.keys(res).forEach(id=>{res[id]=res[id].map(v=>v||null);});return res;
 };
 
-// ── KPI ───────────────────────────────────────────────────────────────────────
 function KPI({label,value,sub,color,bg}) {
   return React.createElement("div",{style:{background:bg,border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 14px",flex:1,minWidth:130}},
     React.createElement("div",{style:{fontSize:10,color:"#64748b",marginBottom:3}},label),
@@ -149,7 +144,6 @@ function KPI({label,value,sub,color,bg}) {
   );
 }
 
-// ── APP ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab,setTab]=useState("table");
   const [weeks,setWeeks]=useState(WEEKS_INIT);
@@ -160,25 +154,31 @@ export default function App() {
   const [collapsed,setCollapsed]=useState({});
   const [editCell,setEditCell]=useState(null);
   const [editVal,setEditVal]=useState("");
-  const [syncState,setSyncState]=useState({anb:null,inv:null,fc:null});
+  const [syncLoading,setSyncLoading]=useState({anb:false,inv:false,fc:false});
   const [syncMsg,setSyncMsg]=useState(null);
-  const [unkModal,setUnkModal]=useState(false);
-  const [pending,setPending]=useState({type:null,rows:[],wi:null,unk:[]});
-  const [manMap,setManMap]=useState({});
-  const [pasteModal,setPasteModal]=useState(false);
-  const [pasteExp,setPasteExp]=useState("");
-  const [pasteInf,setPasteInf]=useState("");
-  const [markActualModal,setMarkActualModal]=useState(false);
-  const [pendingMarkWi,setPendingMarkWi]=useState(null);
   const [bankRules,setBankRules]=useState(DEFAULT_BANK_RULES);
   const [invRules,setInvRules]=useState(DEFAULT_INV_RULES);
 
+  // Review modal state
+  const [reviewModal,setReviewModal]=useState(null);
+  // reviewModal = { type: "anb"|"inv", wi, rows: [{...raw, _line, _amt, _conf}] }
+
+  // Stored synced totals per week for Invoice to Cash Timing calc
+  // anbTotals[wi] = total deposits from ANB for week wi
+  // invTotals[wi] = total invoiced from Invoicing for week wi
+  const [anbTotals,setAnbTotals]=useState({});
+  const [invTotals,setInvTotals]=useState({});
+
+  // Mark actual modal
+  const [markModal,setMarkModal]=useState(null); // wi
+
   const lastActual=useMemo(()=>{const a=weeks.map((w,i)=>({...w,i})).filter(w=>!w.fc);return a.length?a[a.length-1].i:0;},[weeks]);
+  const nextFcWeek=useMemo(()=>{const f=weeks.map((w,i)=>({...w,i})).find(w=>w.fc);return f?f.i:null;},[weeks]);
 
   const classifyBank=row=>{
     if((row["Type"]||"").trim())return{line:row["Type"].trim(),conf:"mapped"};
     const c=(row["Name"]||"").toLowerCase()+" "+(row["Memo/Description"]||"").toLowerCase()+" "+(row["Split"]||"").toLowerCase();
-    for(const r of bankRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>c.includes(k)))return{line:r.line,conf:"auto"};}
+    for(const r of bankRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>k&&c.includes(k)))return{line:r.line,conf:"auto"};}
     return{line:null,conf:"unknown"};
   };
   const classifyInv=row=>{
@@ -186,13 +186,12 @@ export default function App() {
     const prod=(row["Service/Product"]||"").toLowerCase(),staff=(row["Staff"]||"").toLowerCase().trim();
     const tax=parseAmt(row["Tax"]),total=parseAmt(row["Total Due"]);
     if(!total)return{line:null,conf:"skip"};
-    for(const r of invRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>prod.includes(k)))return{line:r.line,conf:"auto"};}
+    for(const r of invRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>k&&prod.includes(k)))return{line:r.line,conf:"auto"};}
     if(tax&&Math.abs(tax)>0)return{line:"Skincare Products",conf:"auto"};
     if(STAFF_MAP[staff])return{line:STAFF_MAP[staff],conf:"auto"};
     return{line:null,conf:"unknown"};
   };
 
-  // ── sub:true rows are display-only (already included in parent row) ──
   const infTot=useMemo(()=>Array.from({length:NW},(_,i)=>inflows.filter(r=>!r.sub).reduce((s,r)=>s+(r.v[i]||0),0)),[inflows]);
   const outTot=useMemo(()=>Array.from({length:NW},(_,i)=>outflows.flatMap(s=>s.rows).reduce((s,r)=>s+(r.v[i]||0),0)),[outflows]);
   const beginBal=useMemo(()=>{const b=[...BB_INIT];for(let i=1;i<NW;i++)b[i]=b[i-1]+infTot[i-1]-outTot[i-1];return b;},[infTot,outTot]);
@@ -200,24 +199,6 @@ export default function App() {
   const totalPages=Math.ceil(NW/WEEKS_PER_PAGE);
   const pageWeeks=weeks.slice(page*WEEKS_PER_PAGE,(page+1)*WEEKS_PER_PAGE).map((w,j)=>({...w,i:page*WEEKS_PER_PAGE+j}));
   const chartData=weeks.map((w,i)=>({name:w.s,Inflows:infTot[i],Outflows:outTot[i],Balance:endBal[i]}));
-
-  const applyRows=(rows,amtKey,wi)=>{
-    const totals={};
-    rows.forEach(r=>{if(!r._line)return;const a=parseAmt(r[amtKey]);if(!a)return;totals[r._line]=(totals[r._line]||0)+a;});
-    setInflows(prev=>prev.map(r=>{const k=Object.keys(IN_MAP).find(k=>IN_MAP[k]===r.id);if(!k||totals[k]===undefined)return r;return{...r,v:r.v.map((v,i)=>i===wi?totals[k]:v)};}));
-          setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{const k=Object.keys(OUT_MAP).find(k=>OUT_MAP[k]===r.id);if(!k||totals[k]===undefined)return r;return{...r,v:r.v.map((v,i)=>i===wi?Math.abs(totals[k]):v)};})})));  
-  };
-
-  const applyFc=(expMap,infMap)=>{
-    setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{const nv=expMap[r.id];if(!nv)return r;return{...r,v:r.v.map((old,i)=>weeks[i].fc?(nv[i]??null):old)};})})));
-    setInflows(prev=>prev.map(r=>{const nv=infMap[r.id];if(!nv)return r;return{...r,v:r.v.map((old,i)=>weeks[i].fc?(nv[i]??null):old)};}));
-    const snap={inflows:{},outflows:{}};
-    Object.keys(infMap).forEach(id=>{snap.inflows[id]=[...infMap[id]];});
-    Object.keys(expMap).forEach(id=>{snap.outflows[id]=[...expMap[id]];});
-    setFcSnapshot(snap);
-    setSyncState(s=>({...s,fc:"done"}));
-    setSyncMsg("✓ Forecasts synced");
-  };
 
   const fetchSheet=async gid=>{
     const res=await fetch(`${MAKE_WEBHOOK}?gid=${gid}`,{method:"GET",mode:"cors"});
@@ -227,50 +208,121 @@ export default function App() {
     return text;
   };
 
-  const runSync=async(type)=>{
-    const key=type==="anb"?"anb":"inv";
-    setSyncState(s=>({...s,[key]:"loading"}));setSyncMsg(null);
+  // Open review modal for ANB
+  const syncANB=async()=>{
+    if(nextFcWeek===null){setSyncMsg("No forecast weeks left.");return;}
+    setSyncLoading(s=>({...s,anb:true}));setSyncMsg(null);
     try{
-      const gid=type==="anb"?GID.anb:GID.invoicing;
-      const text=await fetchSheet(gid);
+      const text=await fetchSheet(GID.anb);
       const rows=parseTable(text);
-      const wi=lastActual+1;
-      if(wi>=NW){setSyncMsg("No hay semanas de forecast para sincronizar.");setSyncState(s=>({...s,[key]:null}));return;}
+      const wi=nextFcWeek;
       const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
       const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
-      const cl=wRows.map(r=>{const res=type==="anb"?classifyBank(r):classifyInv(r);return{...r,_line:res.line,_conf:res.conf};});
-      const unk=cl.filter(r=>r._conf==="unknown"&&parseAmt(r[type==="anb"?"Amount":"Total Due"]));
-      if(unk.length){setPending({type,rows:cl,wi,unk});setUnkModal(true);}
-      else{applyRows(cl,type==="anb"?"Amount":"Total Due",wi);setPendingMarkWi(wi);setMarkActualModal(true);setSyncState(s=>({...s,[key]:"done"}));setSyncMsg(`✓ ${type==="anb"?"ANB":"Invoicing"} synced — ${weeks[wi].s}–${weeks[wi].e}`);}
-    }catch(e){setSyncState(s=>({...s,[key]:"error"}));setSyncMsg(`Error: ${e.message}`);}
+      const classified=wRows.map(r=>{
+        const {line,conf}=classifyBank(r);
+        const amt=parseAmt(r["Amount"]);
+        return{...r,_line:line,_conf:conf,_amt:amt};
+      }).filter(r=>r._amt!==null);
+      setReviewModal({type:"anb",wi,rows:classified});
+    }catch(e){setSyncMsg(`ANB error: ${e.message}`);}
+    setSyncLoading(s=>({...s,anb:false}));
   };
 
-  const syncFc=async()=>{
-    setSyncState(s=>({...s,fc:"loading"}));setSyncMsg(null);
+  // Open review modal for Invoicing
+  const syncINV=async()=>{
+    if(nextFcWeek===null){setSyncMsg("No forecast weeks left.");return;}
+    setSyncLoading(s=>({...s,inv:true}));setSyncMsg(null);
     try{
-      const [expText,infText]=await Promise.all([fetchSheet(GID.forecast),fetchSheet(GID.assumptions)]);
-      applyFc(parseFcExpenses(expText,weeks),parseFcInflows(infText,weeks));
-    }catch(e){setSyncState(s=>({...s,fc:"error"}));setSyncMsg(`Forecast error: ${e.message}`);}
+      const text=await fetchSheet(GID.invoicing);
+      const rows=parseTable(text);
+      const wi=nextFcWeek;
+      const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
+      const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
+      const classified=wRows.map(r=>{
+        const {line,conf}=classifyInv(r);
+        const amt=parseAmt(r["Total Due"]);
+        return{...r,_line:line,_conf:conf,_amt:amt};
+      }).filter(r=>r._conf!=="skip"&&r._amt!==null);
+      setReviewModal({type:"inv",wi,rows:classified});
+    }catch(e){setSyncMsg(`Invoicing error: ${e.message}`);}
+    setSyncLoading(s=>({...s,inv:false}));
   };
 
-  const syncFcPaste=()=>{
-    setSyncState(s=>({...s,fc:"loading"}));setSyncMsg(null);
-    applyFc(parseFcExpenses(pasteExp,weeks),parseFcInflows(pasteInf,weeks));
-    setPasteModal(false);
-  };
+  // Confirm review modal — apply values
+  const confirmReview=()=>{
+    const {type,wi,rows}=reviewModal;
+    const totals={};
+    rows.forEach(r=>{
+      if(!r._line||!r._amt)return;
+      totals[r._line]=(totals[r._line]||0)+r._amt;
+    });
 
-  const confirmUnk=()=>{
-    const final=pending.rows.map((r,i)=>({...r,_line:manMap[i]||r._line}));
-    applyRows(final,pending.type==="anb"?"Amount":"Total Due",pending.wi);
-    setSyncState(s=>({...s,[pending.type]:"done"}));
-    setSyncMsg(`✓ ${pending.type==="anb"?"ANB":"Invoicing"} synced with manual mappings`);
-    setUnkModal(false);setManMap({});
-    setPendingMarkWi(pending.wi);setMarkActualModal(true);
+    if(type==="inv"){
+      // Apply to inflows
+      setInflows(prev=>prev.map(r=>{
+        const k=Object.keys(IN_MAP).find(k=>IN_MAP[k]===r.id);
+        if(!k||totals[k]===undefined)return r;
+        return{...r,v:r.v.map((v,i)=>i===wi?totals[k]:v)};
+      }));
+      // Store invoicing total for this week (sum of positive inflows)
+      const invTotal=Object.values(totals).reduce((s,v)=>s+(v>0?v:0),0);
+      setInvTotals(prev=>{
+        const next={...prev,[wi]:invTotal};
+        // Recalc Invoice to Cash Timing if ANB already synced
+        if(anbTotals[wi]!==undefined){
+          const timing=anbTotals[wi]-invTotal;
+          setInflows(prev2=>prev2.map(r=>r.id==="inv"?{...r,v:r.v.map((v,i)=>i===wi?timing:v)}:r));
+        }
+        return next;
+      });
+      setSyncMsg(`✓ Invoicing synced — ${weeks[wi].s}–${weeks[wi].e}`);
+    } else {
+      // Apply to outflows
+      setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{
+        const k=Object.keys(OUT_MAP).find(k=>OUT_MAP[k]===r.id);
+        if(!k||totals[k]===undefined)return r;
+        return{...r,v:r.v.map((v,i)=>i===wi?Math.abs(totals[k]):v)};
+      })})));
+      // Store ANB deposit total (sum of negative amounts = money going out = deposits received)
+      const anbTotal=rows.reduce((s,r)=>s+(r._amt&&r._amt>0?r._amt:0),0);
+      setAnbTotals(prev=>{
+        const next={...prev,[wi]:anbTotal};
+        // Recalc Invoice to Cash Timing if Invoicing already synced
+        if(invTotals[wi]!==undefined){
+          const timing=anbTotal-invTotals[wi];
+          setInflows(prev2=>prev2.map(r=>r.id==="inv"?{...r,v:r.v.map((v,i)=>i===wi?timing:v)}:r));
+        }
+        return next;
+      });
+      setSyncMsg(`✓ ANB synced — ${weeks[wi].s}–${weeks[wi].e}`);
+    }
+
+    setReviewModal(null);
+    setMarkModal(wi);
   };
 
   const confirmMarkActual=()=>{
-    if(pendingMarkWi!==null)setWeeks(prev=>prev.map((w,i)=>i===pendingMarkWi?{...w,fc:false}:w));
-    setMarkActualModal(false);setPendingMarkWi(null);
+    if(markModal!==null)setWeeks(prev=>prev.map((w,i)=>i===markModal?{...w,fc:false}:w));
+    setMarkModal(null);
+  };
+
+  const applyFc=(expMap,infMap)=>{
+    setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{const nv=expMap[r.id];if(!nv)return r;return{...r,v:r.v.map((old,i)=>weeks[i].fc?(nv[i]??null):old)};})})));
+    setInflows(prev=>prev.map(r=>{const nv=infMap[r.id];if(!nv)return r;return{...r,v:r.v.map((old,i)=>weeks[i].fc?(nv[i]??null):old)};}));
+    const snap={inflows:{},outflows:{}};
+    Object.keys(infMap).forEach(id=>{snap.inflows[id]=[...infMap[id]];});
+    Object.keys(expMap).forEach(id=>{snap.outflows[id]=[...expMap[id]];});
+    setFcSnapshot(snap);
+    setSyncLoading(s=>({...s,fc:false}));
+    setSyncMsg("✓ Forecasts synced");
+  };
+
+  const syncFc=async()=>{
+    setSyncLoading(s=>({...s,fc:true}));setSyncMsg(null);
+    try{
+      const [expText,infText]=await Promise.all([fetchSheet(GID.forecast),fetchSheet(GID.assumptions)]);
+      applyFc(parseFcExpenses(expText,weeks),parseFcInflows(infText,weeks));
+    }catch(e){setSyncLoading(s=>({...s,fc:false}));setSyncMsg(`Forecast error: ${e.message}`);}
   };
 
   const commitEdit=(sec,rowId,wi,val)=>{
@@ -290,7 +342,7 @@ export default function App() {
     if(type==="bank")setBankRules(prev=>prev.map(r=>r.id===id?{...r,[field]:val}:r));
     else setInvRules(prev=>prev.map(r=>r.id===id?{...r,[field]:val}:r));
   };
-  const addRule=(type)=>{
+  const addRule=type=>{
     const newId=`${type==="bank"?"b":"i"}${Date.now()}`;
     if(type==="bank")setBankRules(prev=>[...prev,{id:newId,keywords:"",line:""}]);
     else setInvRules(prev=>[...prev,{id:newId,keywords:"",line:""}]);
@@ -307,7 +359,7 @@ export default function App() {
   const sHdr=(bg,col)=>({padding:"5px 8px",fontSize:11,fontWeight:700,color:col||"#1d4ed8",textTransform:"uppercase",letterSpacing:1,position:"sticky",left:0,background:bg||"#eff6ff",zIndex:2,borderRight:"2px solid #e2e8f0"});
   const subS={padding:"4px 8px 4px 12px",fontSize:10,fontWeight:700,color:"#64748b",position:"sticky",left:0,background:"#f8fafc",zIndex:2,borderRight:"2px solid #e2e8f0",cursor:"pointer"};
   const btnS=(active,col)=>({padding:"6px 14px",borderRadius:7,border:"1px solid #e2e8f0",cursor:"pointer",fontSize:12,fontWeight:600,background:active?(col||"#2563eb"):"#f1f5f9",color:active?"#fff":"#475569"});
-  const syncBtn=(label,key,onClick,color)=>{const st=syncState[key];return React.createElement("button",{onClick,disabled:st==="loading",style:{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:7,border:"1px solid #e2e8f0",cursor:st==="loading"?"default":"pointer",fontSize:12,fontWeight:600,background:st==="done"?"#dcfce7":st==="loading"?"#f1f5f9":"#fff",color:st==="done"?S.green:st==="loading"?S.muted:(color||S.blue),transition:"all .2s"}},st==="loading"?"⟳ Syncing...":st==="done"?`✓ ${label}`:`⟳ ${label}`);};
+  const syncBtn=(label,key,onClick,color)=>{const ld=syncLoading[key];return React.createElement("button",{onClick,disabled:ld,style:{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:7,border:"1px solid #e2e8f0",cursor:ld?"default":"pointer",fontSize:12,fontWeight:600,background:ld?"#f1f5f9":"#fff",color:ld?S.muted:(color||S.blue),transition:"all .2s"}},ld?"⟳ Loading...":`⟳ ${label}`);};
 
   const renderCell=(section,row,wi)=>{
     const v=row.v[wi],isEd=editCell&&editCell.sec===section&&editCell.id===row.id&&editCell.wi===wi;
@@ -317,18 +369,99 @@ export default function App() {
   };
 
   const el=(t,p,...c)=>React.createElement(t,p,...c.flat().filter(v=>v!==false&&v!=null&&v!==undefined));
-  const modal=(content)=>el("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.28)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}},
-    el("div",{style:{background:"#fff",borderRadius:14,padding:24,width:600,maxWidth:"96vw",maxHeight:"88vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.14)"}},content)
+  const modal=(content,wide)=>el("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.28)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    el("div",{style:{background:"#fff",borderRadius:14,padding:24,width:wide?900:520,maxWidth:"98vw",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.14)"}},content)
   );
 
   const varWeeks=weeks.map((w,i)=>({...w,i})).filter(w=>!w.fc).slice(-6);
   const varRows=useMemo(()=>{
     if(!fcSnapshot)return[];
     const rows=[];
-    inflows.filter(r=>!r.sub).forEach(row=>{const fc=fcSnapshot.inflows[row.id];if(!fc)return;if(!varWeeks.some(w=>row.v[w.i]||fc[w.i]))return;rows.push({label:row.label,sub:false,type:"in",act:row.v,fc});});
-    outflows.flatMap(s=>s.rows).forEach(row=>{const fc=fcSnapshot.outflows[row.id];if(!fc)return;if(!varWeeks.some(w=>row.v[w.i]||fc[w.i]))return;rows.push({label:row.label,sub:false,type:"out",act:row.v,fc});});
+    inflows.filter(r=>!r.sub).forEach(row=>{const fc=fcSnapshot.inflows[row.id];if(!fc)return;if(!varWeeks.some(w=>row.v[w.i]||fc[w.i]))return;rows.push({label:row.label,type:"in",act:row.v,fc});});
+    outflows.flatMap(s=>s.rows).forEach(row=>{const fc=fcSnapshot.outflows[row.id];if(!fc)return;if(!varWeeks.some(w=>row.v[w.i]||fc[w.i]))return;rows.push({label:row.label,type:"out",act:row.v,fc});});
     return rows;
   },[fcSnapshot,inflows,outflows,varWeeks]);
+
+  // ── REVIEW MODAL RENDER ──
+  const renderReviewModal=()=>{
+    if(!reviewModal)return null;
+    const {type,wi,rows}=reviewModal;
+    const isInv=type==="inv";
+    const weekLabel=`${weeks[wi].s} – ${weeks[wi].e}`;
+    const confColor=c=>c==="mapped"?"#16a34a":c==="auto"?"#2563eb":c==="unknown"?"#dc2626":"#94a3b8";
+    const confLabel=c=>c==="mapped"?"Manual":c==="auto"?"Auto":c==="unknown"?"⚠ Unmapped":"Skip";
+
+    // Group totals by line for summary
+    const totals={};
+    rows.forEach(r=>{if(!r._line||!r._amt)return;totals[r._line]=(totals[r._line]||0)+r._amt;});
+
+    return modal(
+      el("div",null,
+        el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
+          el("div",null,
+            el("div",{style:{fontSize:16,fontWeight:700,marginBottom:2}},[isInv?"🧾 Invoicing Review":"🏦 ANB Review"]),
+            el("div",{style:{fontSize:12,color:S.muted}},`Week: ${weekLabel} · ${rows.length} transactions`)
+          ),
+          el("div",{style:{display:"flex",gap:8}},
+            el("button",{onClick:()=>setReviewModal(null),style:{padding:"6px 14px",borderRadius:7,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:12,color:"#475569"}},"Cancel"),
+            el("button",{onClick:confirmReview,style:{padding:"6px 16px",borderRadius:7,border:"none",background:S.green,cursor:"pointer",fontSize:12,fontWeight:600,color:"#fff"}},"✓ Confirm & Apply")
+          )
+        ),
+
+        // Summary totals by line
+        el("div",{style:{background:"#f8fafc",borderRadius:8,padding:"10px 12px",marginBottom:14,border:"1px solid #e2e8f0"}},
+          el("div",{style:{fontSize:11,fontWeight:700,color:S.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Summary by Line"),
+          el("div",{style:{display:"flex",flexWrap:"wrap",gap:6}},
+            ...Object.entries(totals).map(([line,amt])=>
+              el("div",{key:line,style:{background:"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"4px 10px",fontSize:11}},
+                el("span",{style:{color:S.muted}},`${line}: `),
+                el("span",{style:{fontWeight:700,color:amt<0?S.red:S.green}},fmt(amt))
+              )
+            )
+          )
+        ),
+
+        // Transaction table
+        el("div",{style:{overflowX:"auto"}},
+          el("table",{style:{borderCollapse:"collapse",width:"100%",fontSize:11}},
+            el("thead",null,el("tr",{style:{background:"#f8fafc",borderBottom:"2px solid #e2e8f0"}},
+              el("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,color:S.muted}},"Date"),
+              el("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,color:S.muted}},isInv?"Client":"Name"),
+              el("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,color:S.muted}},isInv?"Service/Product":"Description"),
+              el("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:600,color:S.muted}},"Amount"),
+              el("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,color:S.muted}},"→ Line"),
+              el("th",{style:{padding:"6px 8px",textAlign:"center",fontWeight:600,color:S.muted}},"Match")
+            )),
+            el("tbody",null,...rows.map((row,idx)=>{
+              const bg=row._conf==="unknown"?"#fff7f7":idx%2===0?"#fff":"#fafafa";
+              return el("tr",{key:idx,style:{borderBottom:"1px solid #f1f5f9",background:bg}},
+                el("td",{style:{padding:"5px 8px",color:S.muted,whiteSpace:"nowrap"}},row["Date"]||""),
+                el("td",{style:{padding:"5px 8px",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:500}},(isInv?(row["Client Name"]||row["Name"]||""):( row["Name"]||"")).slice(0,25)),
+                el("td",{style:{padding:"5px 8px",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:S.muted}},(isInv?(row["Service/Product"]||""):(row["Memo/Description"]||"")).slice(0,35)),
+                el("td",{style:{padding:"5px 8px",textAlign:"right",fontWeight:600,color:row._amt<0?S.red:S.green,whiteSpace:"nowrap"}},fmt(row._amt)),
+                el("td",{style:{padding:"4px 6px"}},
+                  el("select",{
+                    value:row._line||"",
+                    onChange:e=>{
+                      const newLine=e.target.value;
+                      setReviewModal(prev=>({...prev,rows:prev.rows.map((r,i)=>i===idx?{...r,_line:newLine,_conf:newLine?"manual":"unknown"}:r)}));
+                    },
+                    style:{width:"100%",padding:"3px 6px",borderRadius:5,border:`1px solid ${row._conf==="unknown"?"#fca5a5":"#e2e8f0"}`,fontSize:11,background:"#fff"}
+                  },
+                    el("option",{value:""},"— Skip —"),
+                    ...(isInv?ALL_IN_LINES:ALL_OUT_LINES).map(l=>el("option",{key:l,value:l},l))
+                  )
+                ),
+                el("td",{style:{padding:"5px 8px",textAlign:"center"}},
+                  el("span",{style:{fontSize:10,fontWeight:600,color:confColor(row._conf),background:row._conf==="unknown"?"#fef2f2":row._conf==="auto"?"#eff6ff":"#f0fdf4",padding:"2px 6px",borderRadius:4}},confLabel(row._conf))
+                )
+              );
+            }))
+          )
+        )
+      ),
+    true);
+  };
 
   const renderRulesTab=()=>{
     const ruleTable=(type,rules,title,color,bg)=>el("div",{style:{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:16,marginBottom:16}},
@@ -345,18 +478,14 @@ export default function App() {
           )),
           el("tbody",null,...rules.map(r=>
             el("tr",{key:r.id,style:{borderBottom:"1px solid #f1f5f9"}},
-              el("td",{style:{padding:"4px 8px"}},
-                el("input",{value:r.keywords,onChange:e=>updateRule(type,r.id,"keywords",e.target.value),style:{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid #e2e8f0",fontSize:11,boxSizing:"border-box",fontFamily:"monospace"}})
-              ),
+              el("td",{style:{padding:"4px 8px"}},el("input",{value:r.keywords,onChange:e=>updateRule(type,r.id,"keywords",e.target.value),style:{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid #e2e8f0",fontSize:11,boxSizing:"border-box",fontFamily:"monospace"}})),
               el("td",{style:{padding:"4px 8px"}},
                 el("select",{value:r.line,onChange:e=>updateRule(type,r.id,"line",e.target.value),style:{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid #e2e8f0",fontSize:12,background:"#fff"}},
                   el("option",{value:""},"— Select line —"),
-                  ...ALL_LINES.map(l=>el("option",{key:l,value:l},l))
+                  ...(type==="bank"?ALL_OUT_LINES:ALL_IN_LINES).map(l=>el("option",{key:l,value:l},l))
                 )
               ),
-              el("td",{style:{padding:"4px 8px",textAlign:"center"}},
-                el("button",{onClick:()=>deleteRule(type,r.id),style:{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:16,lineHeight:1}},"×")
-              )
+              el("td",{style:{padding:"4px 8px",textAlign:"center"}},el("button",{onClick:()=>deleteRule(type,r.id),style:{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:16,lineHeight:1}},"×"))
             )
           ))
         )
@@ -381,16 +510,17 @@ export default function App() {
         el("button",{onClick:()=>setTab("variance"),style:btnS(tab==="variance",S.purple)},"📊 Forecast vs Actual"),
         el("button",{onClick:()=>setTab("chart"),style:btnS(tab==="chart")},"📈 Chart"),
         el("button",{onClick:()=>setTab("rules"),style:btnS(tab==="rules","#0891b2")},"🗂 Mapping Rules"),
-        el("button",{onClick:handleExport,style:{...btnS(false),...{color:S.green,borderColor:"#bbf7d0",background:S.gBg}}},"⬇ Export CSV")
+        el("button",{onClick:handleExport,style:{...btnS(false),color:S.green,borderColor:"#bbf7d0",background:S.gBg}},"⬇ Export CSV")
       )
     ),
 
     el("div",{style:{padding:"8px 16px",background:"#fff",borderBottom:"1px solid #e2e8f0",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
-      syncBtn("Sync ANB","anb",()=>runSync("anb"),S.red),
-      syncBtn("Sync Invoicing","inv",()=>runSync("inv"),S.green),
+      syncBtn("Sync ANB (Outflows)","anb",syncANB,S.red),
+      syncBtn("Sync Invoicing (Inflows)","inv",syncINV,S.green),
       syncBtn("Sync Forecasts","fc",syncFc,S.purple),
-      el("button",{onClick:()=>setPasteModal(true),style:{...btnS(false),...{color:S.purple,borderColor:"#ddd6fe",fontSize:11}}},"📋 Paste Forecasts"),
-      el("div",{style:{fontSize:11,color:S.muted,marginLeft:4}},`Next week to sync: ${weeks[lastActual+1]?`${weeks[lastActual+1].s}–${weeks[lastActual+1].e}`:"—"}`),
+      nextFcWeek!==null&&el("div",{style:{fontSize:11,color:S.muted,marginLeft:4,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:6,padding:"4px 10px"}},
+        `Next to sync: ${weeks[nextFcWeek].s}–${weeks[nextFcWeek].e}`
+      ),
       syncMsg&&el("div",{style:{fontSize:11,color:syncMsg.includes("error")||syncMsg.includes("Error")?S.red:S.green,marginLeft:"auto"}},syncMsg)
     ),
 
@@ -401,67 +531,18 @@ export default function App() {
       el(KPI,{label:"Projected ending balance",value:fmt(endBal[NW-1]),sub:`(${weeks[NW-1].e})`,color:S.yellow,bg:S.yBg})
     ),
 
-    markActualModal&&modal(
+    // Review modal
+    renderReviewModal(),
+
+    // Mark as actual modal
+    markModal!==null&&modal(
       el("div",null,
         el("div",{style:{fontSize:24,marginBottom:8}},"✅"),
-        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:6}},`Sync complete — ${pendingMarkWi!==null?`${weeks[pendingMarkWi].s}–${weeks[pendingMarkWi].e}`:""}`),
-        el("div",{style:{fontSize:13,color:S.muted,marginBottom:20}},"Do you want to mark this week as Actual instead of Forecast?"),
+        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:6}},`Sync complete — ${weeks[markModal].s}–${weeks[markModal].e}`),
+        el("div",{style:{fontSize:13,color:S.muted,marginBottom:20}},"Mark this week as Actual?"),
         el("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
-          el("button",{onClick:()=>{setMarkActualModal(false);setPendingMarkWi(null);},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Keep as Forecast"),
+          el("button",{onClick:()=>setMarkModal(null),style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Keep as Forecast"),
           el("button",{onClick:confirmMarkActual,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.green,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"✓ Mark as Actual")
-        )
-      )
-    ),
-
-    pasteModal&&modal(
-      el("div",null,
-        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:4}},"📋 Paste Forecast Data"),
-        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Open each tab in Google Sheets → Ctrl+A → Ctrl+C → paste below."),
-        el("div",{style:{marginBottom:12}},
-          el("div",{style:{fontSize:12,fontWeight:700,color:S.red,marginBottom:4}},"📉 Expenses tab"),
-          el("textarea",{value:pasteExp,onChange:e=>setPasteExp(e.target.value),rows:6,style:{width:"100%",padding:8,borderRadius:8,border:"1px solid #fecaca",fontSize:11,boxSizing:"border-box",fontFamily:"monospace",resize:"vertical",outline:"none"}})
-        ),
-        el("div",{style:{marginBottom:16}},
-          el("div",{style:{fontSize:12,fontWeight:700,color:S.purple,marginBottom:4}},"📈 Assumptions tab"),
-          el("textarea",{value:pasteInf,onChange:e=>setPasteInf(e.target.value),rows:6,style:{width:"100%",padding:8,borderRadius:8,border:"1px solid #ddd6fe",fontSize:11,boxSizing:"border-box",fontFamily:"monospace",resize:"vertical",outline:"none"}})
-        ),
-        el("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
-          el("button",{onClick:()=>setPasteModal(false),style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Cancel"),
-          el("button",{onClick:syncFcPaste,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.purple,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"Apply Forecasts")
-        )
-      )
-    ),
-
-    unkModal&&modal(
-      el("div",null,
-        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:4,color:"#b45309"}},`⚠ ${pending.unk.length} rows need manual mapping`),
-        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Assign a line to each row and click Apply."),
-        el("div",{style:{overflowX:"auto"}},
-          el("table",{style:{borderCollapse:"collapse",width:"100%",fontSize:12}},
-            el("thead",null,el("tr",{style:{background:"#fffbeb"}},
-              ...["Date","Name","Description","Amount","→ Line"].map(h=>el("th",{key:h,style:{padding:"6px 10px",textAlign:"left",borderBottom:"1px solid #e2e8f0",fontWeight:600,color:"#78350f"}},h))
-            )),
-            el("tbody",null,...pending.unk.map((row,idx)=>{
-              const amt=parseAmt(row["Amount"]||row["Total Due"]);
-              const oi=pending.rows.indexOf(row);
-              return el("tr",{key:idx,style:{borderBottom:"1px solid #f1f5f9"}},
-                el("td",{style:{padding:"5px 10px",color:S.muted}},row["Date"]),
-                el("td",{style:{padding:"5px 10px",fontWeight:500}},(row["Name"]||row["Client Name"]||"—").slice(0,22)),
-                el("td",{style:{padding:"5px 10px",color:S.muted,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(row["Memo/Description"]||row["Service/Product"]||"—").slice(0,40)),
-                el("td",{style:{padding:"5px 10px",fontWeight:600,color:amt<0?"#b91c1c":"#16a34a",whiteSpace:"nowrap"}},fmt(amt)),
-                el("td",{style:{padding:"5px 10px"}},
-                  el("select",{value:manMap[oi]||"",onChange:e=>setManMap(m=>({...m,[oi]:e.target.value})),style:{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid #e2e8f0",fontSize:12,background:"#fff"}},
-                    el("option",{value:""},"— Skip —"),
-                    ...ALL_LINES.map(l=>el("option",{key:l,value:l},l))
-                  )
-                )
-              );
-            }))
-          )
-        ),
-        el("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",marginTop:16}},
-          el("button",{onClick:()=>{setUnkModal(false);setManMap({});setSyncState(s=>({...s,[pending.type]:null}));},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Cancel"),
-          el("button",{onClick:confirmUnk,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.blue,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"Apply Mappings")
         )
       )
     ),
@@ -473,7 +554,7 @@ export default function App() {
         ?el("div",{style:{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:32,textAlign:"center",color:S.muted}},
             el("div",{style:{fontSize:32,marginBottom:8}},"🔮"),
             el("div",{style:{fontWeight:600,marginBottom:4}},"No forecast data yet"),
-            el("div",{style:{fontSize:12}},"Click Sync Forecasts or Paste Forecasts to load.")
+            el("div",{style:{fontSize:12}},"Click Sync Forecasts to load.")
           )
         :el("div",null,
             el("div",{style:{fontWeight:700,fontSize:15,marginBottom:12}},"Forecast vs Actual — Last actual weeks"),
