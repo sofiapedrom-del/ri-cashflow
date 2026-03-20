@@ -57,7 +57,7 @@ const DEFAULT_INV_RULES = [
   {id:"i4",keywords:"gift card,card decline fee,deposit redeemed",line:"Gift Cards/Deposit Redeemed"},
 ];
 
-const IN_MAP = {"Injectable/Skin Income":"inj","Esthetician Income":"est","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
+const IN_MAP = {"Injectable/Skin Income":"inj","Esthetician Income":"est","CoolSculpting":"cs","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
 const OUT_MAP = {"TrueAesthetics":"ta","Nitra":"nit","Capital One":"cap","Amex":"amx","Wages":"wag","Payroll Taxes":"pt","Payroll Fees":"pf","Benefits":"ben","Rent":"rnt","Utilities":"utl","Bank & Merchant Fees":"bkf","Insurance":"ins","Car Loan":"cl","Taxes, Licenses & Fees":"tax","Misc- TBD":"misc","Personal/Distributions":"dist","Dues & Subscriptions":"dues","Repairs & Maintenance":"rm","Image First":"imgf","OKC Location":"okc"};
 const STAFF_MAP = {"taylor campbell":"Taylor Campbell","emily kurtz":"Emily Kurtz","leah barr":"Leah Barr","rico alvarado":"Rico Alvarado"};
 const STAFF_RATES = {"Emily Kurtz":3000,"Taylor Campbell":4800,"Leah Barr":1000,"Rico Alvarado":450};
@@ -76,6 +76,7 @@ const INIT_IN=[
   {id:"tox",label:"Tox Membership",                     v:pad([608,3955,34503,5123,1067,3066,1896,35963,1472,null],NW)},
   {id:"wlm",label:"Weightloss Membership",               v:pad([9775,2050,3855,null,null,11275,1341,4550,880,9480],NW)},
   {id:"gft",label:"Gift Cards/Deposits Purchased",      v:pad([400,1375,525,2050,855,425,215,275,400,1025],NW)},
+  {id:"cs", label:"CoolSculpting",                      v:pad([null,500,null,null,2300,null,null,null,null,null],NW)},
   {id:"skn",label:"Skincare Products",                  v:pad([5452,6163,4357,2720,7054,10039,4569,5159,6653,6311],NW)},
   {id:"reb",label:"Rebates",                            v:pad([null,1040,780,610,680,1510,810,9135,1470,null],NW)},
   {id:"grd",label:"Gift Cards/Deposit Redeemed",        v:pad([-7038,-11624,-5296,-11025,-10940,-6590,-6412,-6652,-1870,-12390],NW)},
@@ -360,7 +361,7 @@ export default function App() {
       )
     );
     return el("div",{style:{padding:16}},
-      el("div",{style:{fontSize:13,color:S.muted,marginBottom:16}},"Estos mapeos se usan cuando sincronizás ANB o Invoicing. Las keywords son case-insensitive y se buscan dentro del nombre/descripción de cada fila."),
+      el("div",{style:{fontSize:13,color:S.muted,marginBottom:16}},"These mapping rules are used when syncing ANB or Invoicing. Keywords are case-insensitive and matched against the name/description of each row."),
       ruleTable("bank",bankRules,"🏦 ANB — Expense Mapping Rules",S.red,"#fef2f2"),
       ruleTable("inv",invRules,"🧾 Invoicing — Inflow Mapping Rules",S.green,"#f0fdf4")
     );
@@ -387,25 +388,25 @@ export default function App() {
       syncBtn("Sync Invoicing","inv",()=>runSync("inv"),S.green),
       syncBtn("Sync Forecasts","fc",syncFc,S.purple),
       el("button",{onClick:()=>setPasteModal(true),style:{...btnS(false),...{color:S.purple,borderColor:"#ddd6fe",fontSize:11}}},"📋 Paste Forecasts"),
-      el("div",{style:{fontSize:11,color:S.muted,marginLeft:4}},`Próxima semana a sincronizar: ${weeks[lastActual+1]?`${weeks[lastActual+1].s}–${weeks[lastActual+1].e}`:"—"}`),
+      el("div",{style:{fontSize:11,color:S.muted,marginLeft:4}},`Next week to sync: ${weeks[lastActual+1]?`${weeks[lastActual+1].s}–${weeks[lastActual+1].e}`:"—"}`),
       syncMsg&&el("div",{style:{fontSize:11,color:syncMsg.includes("error")||syncMsg.includes("Error")?S.red:S.green,marginLeft:"auto"}},syncMsg)
     ),
 
     el("div",{style:{display:"flex",gap:10,padding:"10px 16px",flexWrap:"wrap",background:"#f8fafc",borderBottom:"1px solid #e2e8f0"}},
       el(KPI,{label:`Balance — ${weeks[lastActual].s}`,value:fmt(endBal[lastActual]),color:"#1d4ed8",bg:S.bBg}),
-      el(KPI,{label:"Inflows (último actual)",value:fmt(infTot[lastActual]),color:S.green,bg:S.gBg}),
-      el(KPI,{label:"Outflows (último actual)",value:fmt(outTot[lastActual]),color:S.red,bg:S.rBg}),
-      el(KPI,{label:"Balance proyectado final",value:fmt(endBal[NW-1]),sub:`(${weeks[NW-1].e})`,color:S.yellow,bg:S.yBg})
+      el(KPI,{label:"Inflows (last actual week)",value:fmt(infTot[lastActual]),color:S.green,bg:S.gBg}),
+      el(KPI,{label:"Outflows (last actual week)",value:fmt(outTot[lastActual]),color:S.red,bg:S.rBg}),
+      el(KPI,{label:"Projected ending balance",value:fmt(endBal[NW-1]),sub:`(${weeks[NW-1].e})`,color:S.yellow,bg:S.yBg})
     ),
 
     markActualModal&&modal(
       el("div",null,
         el("div",{style:{fontSize:24,marginBottom:8}},"✅"),
-        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:6}},`Sync completed — ${pendingMarkWi!==null?`${weeks[pendingMarkWi].s}–${weeks[pendingMarkWi].e}`:""}`),
-        el("div",{style:{fontSize:13,color:S.muted,marginBottom:20}},"Do you want to mark this week as Actual"),
+        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:6}},`Sync complete — ${pendingMarkWi!==null?`${weeks[pendingMarkWi].s}–${weeks[pendingMarkWi].e}`:""}`),
+        el("div",{style:{fontSize:13,color:S.muted,marginBottom:20}},"Do you want to mark this week as Actual instead of Forecast?"),
         el("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
-          el("button",{onClick:()=>{setMarkActualModal(false);setPendingMarkWi(null);},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Mantener como Forecast"),
-          el("button",{onClick:confirmMarkActual,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.green,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"✓ Marcar como Actual")
+          el("button",{onClick:()=>{setMarkActualModal(false);setPendingMarkWi(null);},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Keep as Forecast"),
+          el("button",{onClick:confirmMarkActual,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.green,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"✓ Mark as Actual")
         )
       )
     ),
@@ -413,7 +414,7 @@ export default function App() {
     pasteModal&&modal(
       el("div",null,
         el("div",{style:{fontWeight:700,fontSize:15,marginBottom:4}},"📋 Paste Forecast Data"),
-        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Abrí cada tab en Google Sheets → Ctrl+A → Ctrl+C → pegá abajo."),
+        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Open each tab in Google Sheets → Ctrl+A → Ctrl+C → paste below."),
         el("div",{style:{marginBottom:12}},
           el("div",{style:{fontSize:12,fontWeight:700,color:S.red,marginBottom:4}},"📉 Expenses tab"),
           el("textarea",{value:pasteExp,onChange:e=>setPasteExp(e.target.value),rows:6,style:{width:"100%",padding:8,borderRadius:8,border:"1px solid #fecaca",fontSize:11,boxSizing:"border-box",fontFamily:"monospace",resize:"vertical",outline:"none"}})
@@ -431,12 +432,12 @@ export default function App() {
 
     unkModal&&modal(
       el("div",null,
-        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:4,color:"#b45309"}},`⚠ ${pending.unk.length} filas necesitan mapeo manual`),
-        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Asigná una línea a cada fila y hacé clic en Aplicar."),
+        el("div",{style:{fontWeight:700,fontSize:15,marginBottom:4,color:"#b45309"}},`⚠ ${pending.unk.length} rows need manual mapping`),
+        el("div",{style:{fontSize:12,color:S.muted,marginBottom:14}},"Assign a line to each row and click Apply."),
         el("div",{style:{overflowX:"auto"}},
           el("table",{style:{borderCollapse:"collapse",width:"100%",fontSize:12}},
             el("thead",null,el("tr",{style:{background:"#fffbeb"}},
-              ...["Fecha","Nombre","Descripción","Monto","→ Línea"].map(h=>el("th",{key:h,style:{padding:"6px 10px",textAlign:"left",borderBottom:"1px solid #e2e8f0",fontWeight:600,color:"#78350f"}},h))
+              ...["Date","Name","Description","Amount","→ Line"].map(h=>el("th",{key:h,style:{padding:"6px 10px",textAlign:"left",borderBottom:"1px solid #e2e8f0",fontWeight:600,color:"#78350f"}},h))
             )),
             el("tbody",null,...pending.unk.map((row,idx)=>{
               const amt=parseAmt(row["Amount"]||row["Total Due"]);
@@ -448,7 +449,7 @@ export default function App() {
                 el("td",{style:{padding:"5px 10px",fontWeight:600,color:amt<0?"#b91c1c":"#16a34a",whiteSpace:"nowrap"}},fmt(amt)),
                 el("td",{style:{padding:"5px 10px"}},
                   el("select",{value:manMap[oi]||"",onChange:e=>setManMap(m=>({...m,[oi]:e.target.value})),style:{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid #e2e8f0",fontSize:12,background:"#fff"}},
-                    el("option",{value:""},"— Ignorar —"),
+                    el("option",{value:""},"— Skip —"),
                     ...ALL_LINES.map(l=>el("option",{key:l,value:l},l))
                   )
                 )
@@ -457,8 +458,8 @@ export default function App() {
           )
         ),
         el("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",marginTop:16}},
-          el("button",{onClick:()=>{setUnkModal(false);setManMap({});setSyncState(s=>({...s,[pending.type]:null}));},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Cancelar"),
-          el("button",{onClick:confirmUnk,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.blue,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"Aplicar Mapeos")
+          el("button",{onClick:()=>{setUnkModal(false);setManMap({});setSyncState(s=>({...s,[pending.type]:null}));},style:{padding:"8px 16px",borderRadius:8,border:"1px solid #e2e8f0",background:"#f1f5f9",cursor:"pointer",fontSize:13,color:"#475569"}},"Cancel"),
+          el("button",{onClick:confirmUnk,style:{padding:"8px 20px",borderRadius:8,border:"none",background:S.blue,cursor:"pointer",fontSize:13,fontWeight:600,color:"#fff"}},"Apply Mappings")
         )
       )
     ),
@@ -469,11 +470,11 @@ export default function App() {
       !fcSnapshot
         ?el("div",{style:{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:32,textAlign:"center",color:S.muted}},
             el("div",{style:{fontSize:32,marginBottom:8}},"🔮"),
-            el("div",{style:{fontWeight:600,marginBottom:4}},"No hay datos de forecast"),
-            el("div",{style:{fontSize:12}},"Hacé clic en Sync Forecasts o Paste Forecasts para cargar.")
+            el("div",{style:{fontWeight:600,marginBottom:4}},"No forecast data yet"),
+            el("div",{style:{fontSize:12}},"Click Sync Forecasts or Paste Forecasts to load.")
           )
         :el("div",null,
-            el("div",{style:{fontWeight:700,fontSize:15,marginBottom:12}},"Forecast vs Actual — Últimas semanas actuales"),
+            el("div",{style:{fontWeight:700,fontSize:15,marginBottom:12}},"Forecast vs Actual — Last actual weeks"),
             el("div",{style:{overflowX:"auto"}},
               el("table",{style:{borderCollapse:"collapse",minWidth:"100%",fontSize:12}},
                 el("thead",null,el("tr",{style:{background:"#f8fafc"}},
@@ -513,7 +514,7 @@ export default function App() {
         )
       ),
       el("div",{style:{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:16}},
-        el("div",{style:{fontWeight:600,marginBottom:10,fontSize:13}},"Inflows vs Outflows por semana"),
+        el("div",{style:{fontWeight:600,marginBottom:10,fontSize:13}},"Inflows vs Outflows by Week"),
         el(ResponsiveContainer,{width:"100%",height:180},
           el(BarChart,{data:chartData},el(CartesianGrid,{strokeDasharray:"3 3",stroke:"#e2e8f0"}),el(XAxis,{dataKey:"name",tick:{fontSize:9,fill:S.muted},interval:2}),el(YAxis,{tickFormatter:v=>`$${(v/1000).toFixed(0)}k`,tick:{fontSize:10,fill:S.muted}}),el(Tooltip,{formatter:v=>`$${Number(v).toLocaleString("en-US")}`,contentStyle:{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,fontSize:11}}),el(Legend,{wrapperStyle:{fontSize:11}}),el(Bar,{dataKey:"Inflows",fill:S.green,radius:[3,3,0,0]}),el(Bar,{dataKey:"Outflows",fill:S.red,radius:[3,3,0,0]}))
         )
@@ -522,10 +523,10 @@ export default function App() {
 
     tab==="table"&&el("div",null,
       el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 16px",background:"#fff",borderBottom:"1px solid #e2e8f0",flexWrap:"wrap",gap:6}},
-        el("span",{style:{fontSize:11,color:S.muted}},"Click en celda para editar · Amber = Forecast"),
+        el("span",{style:{fontSize:11,color:S.muted}},"Click any cell to edit · Amber = Forecast"),
         el("div",{style:{display:"flex",gap:4,alignItems:"center"}},
           el("button",{onClick:()=>setPage(p=>Math.max(0,p-1)),disabled:page===0,style:{padding:"4px 12px",borderRadius:6,border:"1px solid #e2e8f0",cursor:page===0?"default":"pointer",fontSize:13,background:"#f1f5f9",color:page===0?"#cbd5e1":"#1e293b"}},"‹"),
-          el("span",{style:{fontSize:11,color:S.muted,lineHeight:"28px"}},`Página ${page+1}/${totalPages}`),
+          el("span",{style:{fontSize:11,color:S.muted,lineHeight:"28px"}},`Page ${page+1}/${totalPages}`),
           el("button",{onClick:()=>setPage(p=>Math.min(totalPages-1,p+1)),disabled:page===totalPages-1,style:{padding:"4px 12px",borderRadius:6,border:"1px solid #e2e8f0",cursor:page===totalPages-1?"default":"pointer",fontSize:13,background:"#f1f5f9",color:page===totalPages-1?"#cbd5e1":"#1e293b"}},"›")
         )
       ),
