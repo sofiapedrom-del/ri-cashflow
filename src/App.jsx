@@ -57,8 +57,8 @@ const DEFAULT_INV_RULES = [
   {id:"i4",keywords:"gift card,card decline fee,deposit redeemed",line:"Gift Cards/Deposit Redeemed"},
 ];
 
-const IN_MAP = {"Injectable/Skin Income":"inj","Esthetician Income":"est","CoolSculpting":"cs","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
-const OUT_MAP = {"TrueAesthetics":"ta","Nitra":"nit","Capital One":"cap","Amex":"amx","Wages":"wag","Payroll Taxes":"pt","Payroll Fees":"pf","Benefits":"ben","Rent":"rnt","Utilities":"utl","Bank & Merchant Fees":"bkf","Insurance":"ins","Car Loan":"cl","Taxes, Licenses & Fees":"tax","Misc- TBD":"misc","Personal/Distributions":"dist","Dues & Subscriptions":"dues","Repairs & Maintenance":"rm","Image First":"imgf","OKC Location":"okc"};
+const IN_MAP = {"Injectable/Skin Income":"inj","Esthetician Income":"est","CoolSculpting":"cs","Wellness Membership":"wel","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
+const OUT_MAP = {"TrueAesthetics":"ta","True Aesthetics (OKC)":"okc","Nitra":"nit","Capital One":"cap","Amex":"amx","Wages":"wag","Payroll Taxes":"pt","Payroll Fees":"pf","Benefits":"ben","Rent":"rnt","Utilities":"utl","Bank & Merchant Fees":"bkf","Insurance":"ins","Car Loan":"cl","Taxes, Licenses & Fees":"tax","Misc- TBD":"misc","Personal/Distributions":"dist","Dues & Subscriptions":"dues","Repairs & Maintenance":"rm","Image First":"imgf","Software":"soft","Travel Expenses":"trvl","Office Supplies":"ofc","Accounting":"acc","OKC Location":"okcloc"};
 const STAFF_MAP = {"taylor campbell":"Taylor Campbell","emily kurtz":"Emily Kurtz","leah barr":"Leah Barr","rico alvarado":"Rico Alvarado"};
 const STAFF_RATES = {"Emily Kurtz":3000,"Taylor Campbell":4800,"Leah Barr":1000,"Rico Alvarado":450};
 const TOX_PRICE=175, WL_PRICE=455;
@@ -75,6 +75,7 @@ const INIT_IN=[
   {id:"bhm",label:"BH Membership",                      v:pad([18000,null,null,12100,394,17075,null,275,null,17250],NW)},
   {id:"tox",label:"Tox Membership",                     v:pad([608,3955,34503,5123,1067,3066,1896,35963,1472,null],NW)},
   {id:"wlm",label:"Weightloss Membership",               v:pad([9775,2050,3855,null,null,11275,1341,4550,880,9480],NW)},
+  {id:"wel",label:"Wellness Membership",                v:pad([null,null,null,null,90,null,null,null,null,null],NW)},
   {id:"gft",label:"Gift Cards/Deposits Purchased",      v:pad([400,1375,525,2050,855,425,215,275,400,1025],NW)},
   {id:"cs", label:"CoolSculpting",                      v:pad([null,500,null,null,2300,null,null,null,null,null],NW)},
   {id:"skn",label:"Skincare Products",                  v:pad([5452,6163,4357,2720,7054,10039,4569,5159,6653,6311],NW)},
@@ -103,6 +104,7 @@ const INIT_OUT=[
   ]},
   {sec:"Services",rows:[
     {id:"acc",label:"Accounting",             v:pad([6334,null,null,null,null,null,null,null,null,null],NW)},
+    {id:"okcloc",label:"OKC Location",        v:pad([null,2000,null,null,null,null,null,null,null,null],NW)},
   ]},
   {sec:"Other Expenses",rows:[
     {id:"bkf",label:"Bank & Merchant Fees",   v:pad([null,7531,null,null,null,6974,null,null,null,7398],NW)},
