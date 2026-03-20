@@ -195,7 +195,7 @@ export default function App() {
     const totals={};
     rows.forEach(r=>{if(!r._line)return;const a=parseAmt(r[amtKey]);if(!a)return;totals[r._line]=(totals[r._line]||0)+a;});
     setInflows(prev=>prev.map(r=>{const k=Object.keys(IN_MAP).find(k=>IN_MAP[k]===r.id);if(!k||totals[k]===undefined)return r;return{...r,v:r.v.map((v,i)=>i===wi?totals[k]:v)};}));
-    setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{const k=Object.keys(OUT_MAP).find(k=>OUT_MAP[k]===r.id);if(!k||totals[k]===undefined)return r;return{...r,v:r.v.map((v,i)=>i===wi?Math.abs(totals[k]):v));}})}))); 
+          setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{const k=Object.keys(OUT_MAP).find(k=>OUT_MAP[k]===r.id);if(!k||totals[k]===undefined)return r;return{...r,v:r.v.map((v,i)=>i===wi?Math.abs(totals[k]):v)};})})));  
   };
 
   const applyFc=(expMap,infMap)=>{
