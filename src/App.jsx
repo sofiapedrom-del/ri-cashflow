@@ -57,7 +57,7 @@ const DEFAULT_INV_RULES = [
   {id:"i4",keywords:"gift card,card decline fee,deposit redeemed",line:"Gift Cards/Deposit Redeemed"},
 ];
 
-const IN_MAP = {"Injectable/Skin Income":"inj","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
+const IN_MAP = {"Injectable/Skin Income":"inj","Esthetician Income":"est","Rebates":"reb","Gift Cards/Deposits Purchased":"gft","Gift Cards/Deposit Redeemed":"grd","Taylor Campbell":"tc","Emily Kurtz":"ek","Leah Barr":"lb","Rico Alvarado":"ra","BH Membership":"bhm","Tox Membership":"tox","Weightloss Membership":"wlm","Skincare Products":"skn"};
 const OUT_MAP = {"TrueAesthetics":"ta","Nitra":"nit","Capital One":"cap","Amex":"amx","Wages":"wag","Payroll Taxes":"pt","Payroll Fees":"pf","Benefits":"ben","Rent":"rnt","Utilities":"utl","Bank & Merchant Fees":"bkf","Insurance":"ins","Car Loan":"cl","Taxes, Licenses & Fees":"tax","Misc- TBD":"misc","Personal/Distributions":"dist","Dues & Subscriptions":"dues","Repairs & Maintenance":"rm","Image First":"imgf","OKC Location":"okc"};
 const STAFF_MAP = {"taylor campbell":"Taylor Campbell","emily kurtz":"Emily Kurtz","leah barr":"Leah Barr","rico alvarado":"Rico Alvarado"};
 const STAFF_RATES = {"Emily Kurtz":3000,"Taylor Campbell":4800,"Leah Barr":1000,"Rico Alvarado":450};
@@ -66,9 +66,10 @@ const ALL_LINES = [...Object.keys(IN_MAP),...Object.keys(OUT_MAP)];
 
 // ── INITIAL DATA ──────────────────────────────────────────────────────────────
 const INIT_IN=[
-  {id:"inj",label:"Injectable/Skin Income",                v:pad([11464,20275,27483,22791,28862,31773,23413,21447,21104,28483],NW)},
+  {id:"inj",label:"Injectable/Skin Income",                v:pad([11464,6566,11163,11896,16005,15788,13591,5518,7257,14240],NW)},
   {id:"tc", label:"  Taylor Campbell",         sub:true,   v:pad([11464,6566,11163,11896,16005,15788,13591,5518,7257,14240],NW)},
   {id:"ek", label:"  Emily Kurtz",             sub:true,   v:pad([null,13709,16320,10895,12857,15985,9822,15929,13847,14243],NW)},
+  {id:"est",label:"Esthetician Income",                    v:pad([2060,5805,4391,2865,2970,2993,4102,3848,5745,11094],NW)},
   {id:"lb", label:"  Leah Barr",               sub:true,   v:pad([2060,4430,3026,1660,680,2378,3452,2323,3875,9270],NW)},
   {id:"ra", label:"  Rico Alvarado",           sub:true,   v:pad([null,1375,1365,1205,2290,615,650,1525,1870,1825],NW)},
   {id:"bhm",label:"BH Membership",                        v:pad([18000,null,null,12100,394,17075,null,275,null,17250],NW)},
