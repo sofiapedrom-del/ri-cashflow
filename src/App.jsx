@@ -27,6 +27,36 @@ const dateToWeekIdx = (str,weeks) => { const d=parseDate(str);if(!d)return -1;co
 const csvSplit = line => { const cols=[];let c="",q=false;for(let i=0;i<=line.length;i++){const ch=i<line.length?line[i]:"";if(ch==='"'){q=!q;continue;}if((ch===","||i===line.length)&&!q){cols.push(c.trim());c="";}else c+=ch;}return cols; };
 const parseTable = text => { const lines=text.trim().split("\n").filter(l=>l.trim());if(lines.length<2)return[];const sep=lines[0].includes("\t")?"\t":",";const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,""));return lines.slice(1).map(line=>{const cols=sep==="\t"?line.split("\t").map(c=>c.trim()):csvSplit(line);const o={};hdrs.forEach((h,i)=>{o[h]=cols[i]||"";});return o;}); };
 
+// Parser specifically for ANB transaction report format
+const parseANB = text => {
+  const lines = text.split("\n");
+  // Find the header row — it contains "Transaction date"
+  let hdrIdx = -1;
+  for(let i=0;i<lines.length;i++){
+    if(lines[i].toLowerCase().includes("transaction date")){hdrIdx=i;break;}
+  }
+  if(hdrIdx<0) return [];
+  const hdrs = csvSplit(lines[hdrIdx]).map(h=>h.trim().replace(/"/g,""));
+  const rows = [];
+  for(let i=hdrIdx+1;i<lines.length;i++){
+    const cols = csvSplit(lines[i]).map(c=>c.trim().replace(/^"|"$/g,""));
+    if(!cols[1]||!cols[1].trim()) continue; // skip section headers / empty date rows
+    const amt = parseAmt(cols[hdrs.indexOf("Amount")]||cols[8]);
+    if(amt===null) continue;
+    const o={};
+    hdrs.forEach((h,j)=>{o[h]=cols[j]||"";});
+    // Normalize column names to what classifyBank expects
+    o["Date"] = o["Transaction date"]||o["Date"]||"";
+    o["Name"] = o["Name"]||"";
+    o["Memo/Description"] = o["Memo/Description"]||"";
+    o["Amount"] = String(amt);
+    o["Type"] = o["Transaction type"]||"";
+    o["Split"] = o["Item split account"]||"";
+    rows.push(o);
+  }
+  return rows;
+};
+
 const DEFAULT_BANK_RULES = [
   {id:"b1",keywords:"5/3 bank,stripe,cherry,repeatmd",line:"Injectable/Skin Income"},
   {id:"b2",keywords:"trueaesthetics,true aesthetics",line:"TrueAesthetics"},
@@ -214,7 +244,7 @@ export default function App() {
     setSyncLoading(s=>({...s,anb:true}));setSyncMsg(null);
     try{
       const text=await fetchSheet(GID.anb);
-      const rows=parseTable(text);
+      const rows=parseANB(text);
       const wi=nextFcWeek;
       const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
       const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
