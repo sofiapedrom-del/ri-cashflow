@@ -175,52 +175,54 @@ const parseFcInflows = text => {
 
 // ── INITIAL DATA ──────────────────────────────────────────────────────────────
 const INIT_IN=[
-  {id:"inj",label:"Injectable/Skin Income",    v:pad([36427,21939,17545,17547,50978,27790,11720,8148,17384,6684],NW)},
-  {id:"tc", label:"  Taylor Campbell",          v:pad([16005,15788,13591,5518,7257,14240,14400,null,14400,9600],NW)},
-  {id:"ek", label:"  Emily Kurtz",              v:pad([15985,9822,15929,13847,14243,12000,9000,12000,12000,12000],NW)},
-  {id:"lb", label:"  Leah Barr",               v:pad([3452,2323,3875,9270,4000,4000,3000,4000,4000,4000],NW)},
-  {id:"ra", label:"  Rico Alvarado",            v:pad([1205,2290,615,650,1525,1870,1825,1800,1350,1800],NW)},
-  {id:"bhm",label:"BH Membership",              v:pad([null,18000,null,null,null,null,17250,null,null,18000],NW)},
-  {id:"tox",label:"Tox Membership",             v:pad([3955,34503,5123,1067,3066,1896,35963,1472,null,159],NW)},
-  {id:"wlm",label:"Weightloss Membership",      v:pad([null,11275,1341,4550,880,9480,475,4095,475,9975],NW)},
-  {id:"gft",label:"Gift Cards/Deposits Purchased",v:pad([400,1025,null,null,500,500,500,500,500,500],NW)},
-  {id:"skn",label:"Skincare Products",          v:pad([6163,4357,2720,7054,10039,4569,5159,6653,6311,5750],NW)},
-  {id:"reb",label:"Rebates",                    v:pad([null,null,null,null,null,null,null,null,1820,null],NW)},
-  {id:"grd",label:"Gift Cards/Deposit Redeemed",v:pad([-11624,-5296,-11025,-10940,-6590,-6412,-6652,-1870,-12390,null],NW)},
-  {id:"inv",label:"Invoice to Cash Timing",     v:pad([-13693,-221,-1460,-2848,-868,-2239,null,null,null,null],NW)},
-  {id:"oth",label:"Other Cash Inflows",         v:pad([],NW)},
+  {id:"inj",label:"Injectable/Skin Income",      v:pad([11464,20275,27483,22791,28862,31773,23413,21447,21104,28483],NW)},
+  {id:"tc", label:"  Taylor Campbell",            v:pad([11464,6566,11163,11896,16005,15788,13591,5518,7257,14240],NW)},
+  {id:"ek", label:"  Emily Kurtz",                v:pad([null,13709,16320,10895,12857,15985,9822,15929,13847,14243],NW)},
+  {id:"lb", label:"  Leah Barr",                  v:pad([2060,4430,3026,1660,680,2378,3452,2323,3875,9270],NW)},
+  {id:"ra", label:"  Rico Alvarado",              v:pad([null,1375,1365,1205,2290,615,650,1525,1870,1825],NW)},
+  {id:"bhm",label:"BH Membership",               v:pad([18000,null,null,12100,394,17075,null,275,null,17250],NW)},
+  {id:"tox",label:"Tox Membership",              v:pad([608,3955,34503,5123,1067,3066,1896,35963,1472,null],NW)},
+  {id:"wlm",label:"Weightloss Membership",       v:pad([9775,2050,3855,null,null,11275,1341,4550,880,9480],NW)},
+  {id:"gft",label:"Gift Cards/Deposits Purchased",v:pad([400,1375,525,2050,855,425,215,275,400,1025],NW)},
+  {id:"skn",label:"Skincare Products",           v:pad([5452,6163,4357,2720,7054,10039,4569,5159,6653,6311],NW)},
+  {id:"reb",label:"Rebates",                     v:pad([null,500,null,null,2300,null,null,null,null,null],NW)},
+  {id:"grd",label:"Gift Cards/Deposit Redeemed", v:pad([-7038,-11624,-5296,-11025,-10940,-6590,-6412,-6652,-1870,-12390],NW)},
+  {id:"inv",label:"Invoice to Cash Timing",      v:pad([-32995,21650,-35380,38514,-13693,-221,-1460,-2848,-868,-2239],NW)},
+  {id:"oth",label:"Other Cash Inflows",          v:pad([],NW)},
 ];
+
+// ── REEMPLAZAR INIT_OUT ───────────────────────────────────────────────────────
 const INIT_OUT=[
   {sec:"Inventory",rows:[
-    {id:"ta", label:"TrueAesthetics",v:pad([3408,22357,7135,3913,null,34819,13423,14422,27435,null],NW)},
-    {id:"nit",label:"Nitra",         v:pad([null,10000,10000,10000,10000,10000,10000,10000,10000,10000],NW)},
-    {id:"cap",label:"Capital One",   v:pad([null,null,null,6522,null,null,null,null,8807,null],NW)},
-    {id:"amx",label:"Amex",          v:pad([null,null,null,6859,null,null,null,null,5800,null],NW)},
+    {id:"ta", label:"TrueAesthetics",  v:pad([7154,null,null,3408,22357,7135,3913,null,34819,13423],NW)},
+    {id:"nit",label:"Nitra",           v:pad([8000,10000,null,10000,10000,10000,10000,10000,10000,10000],NW)},
+    {id:"cap",label:"Capital One",     v:pad([null,null,null,14597,null,null,null,6522,null,null],NW)},
+    {id:"amx",label:"Amex",            v:pad([null,null,9799,null,null,null,6859,null,null,null],NW)},
   ]},
   {sec:"Personnel",rows:[
-    {id:"wag",label:"Wages",         v:pad([null,null,null,null,16694,null,null,null,28900,null],NW)},
-    {id:"pt", label:"Payroll Taxes", v:pad([null,null,null,null,10027,null,null,null,null,null],NW)},
-    {id:"pf", label:"Payroll Fees",  v:pad([null,null,null,null,null,null,null,25,225,null],NW)},
-    {id:"ben",label:"Benefits",      v:pad([null,null,null,null,null,null,null,null,35,null],NW)},
+    {id:"wag",label:"Wages",           v:pad([null,15293,null,13169,null,17152,null,12174,null,16694],NW)},
+    {id:"pt", label:"Payroll Taxes",   v:pad([null,8091,null,16296,null,10437,null,6117,9614,10027],NW)},
+    {id:"pf", label:"Payroll Fees",    v:pad([null,250,null,null,null,null,200,null,null,25],NW)},
+    {id:"ben",label:"Benefits",        v:pad([null,null,5238,null,35,null,4837,null,null,35],NW)},
   ]},
   {sec:"Facilities",rows:[
-    {id:"rnt",label:"Rent",          v:pad([null,null,null,null,5630,null,null,null,5630,null],NW)},
-    {id:"utl",label:"Utilities",     v:pad([],NW)},
+    {id:"rnt",label:"Rent",            v:pad([null,5630,null,null,null,5626,null,null,null,5630],NW)},
+    {id:"utl",label:"Utilities",       v:pad([null,504,null,null,null,551,null,null,null,null],NW)},
   ]},
   {sec:"Other Expenses",rows:[
-    {id:"bkf",label:"Bank & Merchant Fees",    v:pad([null,null,null,null,7398,null,null,null,null,7398],NW)},
-    {id:"ins",label:"Insurance",               v:pad([null,null,null,null,1640,null,null,null,353,1640],NW)},
-    {id:"cl", label:"Car Loan",                v:pad([null,null,null,null,1783,null,null,null,1783,null],NW)},
-    {id:"tax",label:"Taxes & Licenses",        v:pad([null,null,null,null,null,null,null,null,576,null],NW)},
-    {id:"misc",label:"Misc - TBD",             v:pad([null,null,null,null,2000,null,null,null,2000,2000],NW)},
-    {id:"dist",label:"Personal/Distributions", v:pad([null,null,null,null,8303,null,null,null,1000,1000],NW)},
-    {id:"dues",label:"Dues & Subscriptions",   v:pad([],NW)},
-    {id:"rm",  label:"Repairs & Maintenance",  v:pad([null,null,null,null,null,null,null,null,965,null],NW)},
-    {id:"imgf",label:"Image First",            v:pad([null,null,null,null,null,null,null,null,800,null],NW)},
-    {id:"okc", label:"OKC Location",           v:pad([],NW)},
+    {id:"bkf",label:"Bank & Merchant Fees",    v:pad([null,7531,null,null,null,6974,null,null,null,7398],NW)},
+    {id:"ins",label:"Insurance",               v:pad([null,353,1638,null,null,353,1638,null,null,353],NW)},
+    {id:"cl", label:"Car Loan",                v:pad([null,1783,null,null,null,1783,null,null,null,1783],NW)},
+    {id:"tax",label:"Taxes & Licenses",        v:pad([null,null,null,1501,167,null,32,894,3044,576],NW)},
+    {id:"misc",label:"Misc - TBD",             v:pad([60,309,78,920,450,60,815,157,632,836],NW)},
+    {id:"dist",label:"Personal/Distributions", v:pad([1133,8165,382,null,90,8303,88,null,null,8303],NW)},
+    {id:"dues",label:"Dues & Subscriptions",   v:pad([null,null,null,null,null,null,null,null,null,null],NW)},
+    {id:"rm",  label:"Repairs & Maintenance",  v:pad([965,null,965,null,965,null,null,965,null,null],NW)},
+    {id:"imgf",label:"Image First",            v:pad([130,null,null,null,null,null,90,null,null,null],NW)},
+    {id:"okc", label:"OKC Location",           v:pad([2300,null,null,null,null,null,null,null,null,null],NW)},
   ]},
 ];
-const BB = pad([36427,21939,17545,17547,50978,27790,11720,8148,17384,6684,33201,8466,24383,15632,31355,8498],NW);
+const BB = pad([49856,33794,21705,20611,36427,21939,17545,17547,50978,27790],NW);
 const ALL_LINES = [...INIT_IN.map(r=>r.label.trim()),...INIT_OUT.flatMap(s=>s.rows.map(r=>r.label))];
 
 // ── FETCH ─────────────────────────────────────────────────────────────────────
