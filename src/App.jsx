@@ -288,7 +288,9 @@ export default function App() {
     setSyncLoading(s=>({...s,anb:true}));setSyncMsg(null);
     try{
       const text=await fetchSheet(GID.anb);
+      console.log("ANB RAW TEXT (first 500):", text.slice(0,500));
       const rows=parseANB(text);
+      console.log("ANB PARSED ROWS:", rows.length, rows.slice(0,3));
       const wi=nextFcWeek;
       const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
       const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
@@ -308,7 +310,9 @@ export default function App() {
     setSyncLoading(s=>({...s,inv:true}));setSyncMsg(null);
     try{
       const text=await fetchSheet(GID.invoicing);
+      console.log("RAW TEXT (first 500):", text.slice(0,500));
       const rows=parseInvoicing(text);
+      console.log("PARSED ROWS:", rows.length, rows.slice(0,3));
       const wi=nextFcWeek;
       const ws=new Date(weeks[wi].s),we=new Date(weeks[wi].e);we.setHours(23,59,59);
       const wRows=rows.filter(r=>{const d=parseDate(r["Date"]||"");return d&&d>=ws&&d<=we;});
