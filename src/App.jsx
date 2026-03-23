@@ -25,27 +25,37 @@ const pad = (a,l) => { const r=[...a]; while(r.length<l) r.push(null); return r.
 const parseDate = str => { if(!str) return null; const m=str.match(/([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})/); if(m){const d=new Date(`${m[1]} ${m[2]} ${m[3]}`);return isNaN(d)?null:d;} const d=new Date(str);return isNaN(d)?null:d; };
 const dateToWeekIdx = (str,weeks) => { const d=parseDate(str);if(!d)return -1;const y=d.getFullYear(),mo=d.getMonth(),dy=d.getDate();for(let i=0;i<weeks.length;i++){const s=new Date(weeks[i].s),e=new Date(weeks[i].e);const sy=s.getFullYear(),sm=s.getMonth(),sd=s.getDate(),ey=e.getFullYear(),em=e.getMonth(),ed=e.getDate();const ok1=(y>sy)||(y===sy&&mo>sm)||(y===sy&&mo===sm&&dy>=sd);const ok2=(y<ey)||(y===ey&&mo<em)||(y===ey&&mo===em&&dy<=ed);if(ok1&&ok2)return i;}return -1; };
 const csvSplit = line => { const cols=[];let c="",q=false;for(let i=0;i<=line.length;i++){const ch=i<line.length?line[i]:"";if(ch==='"'){q=!q;continue;}if((ch===","||i===line.length)&&!q){cols.push(c.trim());c="";}else c+=ch;}return cols; };
+const normalizeHdr = h => String(h||"").replace(/^\uFEFF/,"").trim().replace(/"/g,"").toLowerCase();
+const findHeaderRow = (lines,required) => lines.findIndex(line => {
+  const hdrs = csvSplit(line).map(normalizeHdr);
+  return required.every(req => hdrs.some(h => h.includes(req)));
+});
 const parseTable = text => { const lines=text.trim().split("\n").filter(l=>l.trim());if(lines.length<2)return[];const sep=lines[0].includes("\t")?"\t":",";const hdrs=lines[0].split(sep).map(h=>h.trim().replace(/"/g,""));return lines.slice(1).map(line=>{const cols=sep==="\t"?line.split("\t").map(c=>c.trim()):csvSplit(line);const o={};hdrs.forEach((h,i)=>{o[h]=cols[i]||"";});return o;}); };
 
 // Parser for Invoicing report format
 const parseInvoicing = text => {
-  const lines = text.split("\n");
-  const hdrs = csvSplit(lines[0]).map(h=>h.trim().replace(/"/g,""));
-  const dateIdx = hdrs.indexOf("Date");
-  const clientIdx = hdrs.indexOf("Client Name");
-  const prodIdx = hdrs.indexOf("Service/Product");
-  const staffIdx = hdrs.indexOf("Staff");
-  const taxIdx = hdrs.indexOf("Tax");
-  const totalIdx = hdrs.indexOf("Total Due");
-  const amtIdx = hdrs.indexOf("Amount");
-  const cashInflowIdx = hdrs.indexOf("Cash Inflows");
+  const lines = text.split("\n").filter(l=>l.trim());
+  const hdrIdx = findHeaderRow(lines,["date","client","amount"]);
+  if(hdrIdx<0) return [];
+
+  const hdrs = csvSplit(lines[hdrIdx]).map(h=>h.trim().replace(/"/g,""));
+  const normHdrs = hdrs.map(normalizeHdr);
+  const dateIdx = normHdrs.findIndex(h=>h==="date");
+  const clientIdx = normHdrs.findIndex(h=>h==="client name");
+  const prodIdx = normHdrs.findIndex(h=>h==="service/product");
+  const staffIdx = normHdrs.findIndex(h=>h==="staff");
+  const taxIdx = normHdrs.findIndex(h=>h==="tax");
+  const amtIdx = normHdrs.findIndex(h=>h==="amount"||h==="total due");
+  const cashInflowIdx = normHdrs.findIndex(h=>h==="cash inflows");
+
+  if(dateIdx<0 || amtIdx<0) return [];
 
   const rows = [];
-  for(let i=1;i<lines.length;i++){
+  for(let i=hdrIdx+1;i<lines.length;i++){
     const cols = csvSplit(lines[i]).map(c=>c.trim().replace(/^"|"$/g,""));
     if(!cols[dateIdx]||!cols[dateIdx].trim()) continue;
     const amt = parseAmt(cols[amtIdx]);
-    if(!amt || amt === 0) continue; // only rows where cash was actually received
+    if(!amt || amt === 0) continue;
     const o = {};
     hdrs.forEach((h,j)=>{o[h]=cols[j]||"";});
     o["Date"] = cols[dateIdx]||"";
@@ -53,8 +63,8 @@ const parseInvoicing = text => {
     o["Service/Product"] = cols[prodIdx]||"";
     o["Staff"] = cols[staffIdx]||"";
     o["Tax"] = cols[taxIdx]||"";
-    o["Total Due"] = cols[amtIdx]||""; // use Amount (cash received) not Total Due
-    o["Cash Inflows"] = cols[cashInflowIdx]||"";
+    o["Total Due"] = cols[amtIdx]||"";
+    o["Cash Inflows"] = cashInflowIdx>=0 ? (cols[cashInflowIdx]||"") : "";
     o["_rawAmt"] = amt;
     rows.push(o);
   }
@@ -63,23 +73,24 @@ const parseInvoicing = text => {
 
 // Parser specifically for ANB transaction report format
 const parseANB = text => {
-  const lines = text.split("\n");
-  // Find the header row — it contains "Transaction date"
-  let hdrIdx = -1;
-  for(let i=0;i<lines.length;i++){
-    if(lines[i].toLowerCase().includes("transaction date")){hdrIdx=i;break;}
-  }
+  const lines = text.split("\n").filter(l=>l.trim());
+  const hdrIdx = findHeaderRow(lines,["transaction date","amount"]);
   if(hdrIdx<0) return [];
+
   const hdrs = csvSplit(lines[hdrIdx]).map(h=>h.trim().replace(/"/g,""));
+  const normHdrs = hdrs.map(normalizeHdr);
+  const dateIdx = normHdrs.findIndex(h=>h==="transaction date"||h==="date");
+  const amountIdx = normHdrs.findIndex(h=>h==="amount");
+  if(dateIdx<0 || amountIdx<0) return [];
+
   const rows = [];
   for(let i=hdrIdx+1;i<lines.length;i++){
     const cols = csvSplit(lines[i]).map(c=>c.trim().replace(/^"|"$/g,""));
-    if(!cols[1]||!cols[1].trim()) continue; // skip section headers / empty date rows
-    const amt = parseAmt(cols[hdrs.indexOf("Amount")]||cols[8]);
+    if(!cols[dateIdx]||!cols[dateIdx].trim()) continue;
+    const amt = parseAmt(cols[amountIdx]);
     if(amt===null) continue;
     const o={};
     hdrs.forEach((h,j)=>{o[h]=cols[j]||"";});
-    // Normalize column names to what classifyBank expects
     o["Date"] = o["Transaction date"]||o["Date"]||"";
     o["Name"] = o["Name"]||"";
     o["Memo/Description"] = o["Memo/Description"]||"";
@@ -223,24 +234,19 @@ export default function App() {
   const [bankRules,setBankRules]=useState(DEFAULT_BANK_RULES);
   const [invRules,setInvRules]=useState(DEFAULT_INV_RULES);
 
-  // Review modal state
   const [reviewModal,setReviewModal]=useState(null);
-  // reviewModal = { type: "anb"|"inv", wi, rows: [{...raw, _line, _amt, _conf}] }
-
-  // Stored synced totals per week for Invoice to Cash Timing calc
-  // anbTotals[wi] = total deposits from ANB for week wi
-  // invTotals[wi] = total invoiced from Invoicing for week wi
   const [anbTotals,setAnbTotals]=useState({});
   const [invTotals,setInvTotals]=useState({});
-
-  // Mark actual modal
-  const [markModal,setMarkModal]=useState(null); // wi
+  const [markModal,setMarkModal]=useState(null);
 
   const lastActual=useMemo(()=>{const a=weeks.map((w,i)=>({...w,i})).filter(w=>!w.fc);return a.length?a[a.length-1].i:0;},[weeks]);
   const nextFcWeek=useMemo(()=>{const f=weeks.map((w,i)=>({...w,i})).find(w=>w.fc);return f?f.i:null;},[weeks]);
 
   const classifyBank=row=>{
-    if((row["Type"]||"").trim())return{line:row["Type"].trim(),conf:"mapped"};
+    const split = (row["Split"]||"").trim();
+    const type = (row["Type"]||"").trim();
+    if(split && OUT_MAP[split])return{line:split,conf:"mapped"};
+    if(type && OUT_MAP[type])return{line:type,conf:"mapped"};
     const c=(row["Name"]||"").toLowerCase()+" "+(row["Memo/Description"]||"").toLowerCase()+" "+(row["Split"]||"").toLowerCase();
     for(const r of bankRules){const kws=r.keywords.split(",").map(k=>k.trim().toLowerCase());if(kws.some(k=>k&&c.includes(k)))return{line:r.line,conf:"auto"};}
     return{line:null,conf:"unknown"};
@@ -258,7 +264,6 @@ export default function App() {
     }
     if(tax&&Math.abs(tax)>0)return{line:"Skincare Products",conf:"auto"};
     if(STAFF_MAP[staff])return{line:STAFF_MAP[staff],conf:"auto"};
-    // fallback: if staff is an injector, classify as Injectable/Skin Income
     const injectors=["emily kurtz","taylor campbell"];
     if(injectors.includes(staff))return{line:"Injectable/Skin Income",conf:"auto"};
     const ests=["leah barr","rico alvarado"];
@@ -282,7 +287,6 @@ export default function App() {
     return text;
   };
 
-  // Open review modal for ANB
   const syncANB=async()=>{
     if(nextFcWeek===null){setSyncMsg("No forecast weeks left.");return;}
     setSyncLoading(s=>({...s,anb:true}));setSyncMsg(null);
@@ -304,7 +308,6 @@ export default function App() {
     setSyncLoading(s=>({...s,anb:false}));
   };
 
-  // Open review modal for Invoicing
   const syncINV=async()=>{
     if(nextFcWeek===null){setSyncMsg("No forecast weeks left.");return;}
     setSyncLoading(s=>({...s,inv:true}));setSyncMsg(null);
@@ -326,7 +329,6 @@ export default function App() {
     setSyncLoading(s=>({...s,inv:false}));
   };
 
-  // Confirm review modal — apply values
   const confirmReview=()=>{
     const {type,wi,rows}=reviewModal;
     const totals={};
@@ -336,17 +338,14 @@ export default function App() {
     });
 
     if(type==="inv"){
-      // Apply to inflows
       setInflows(prev=>prev.map(r=>{
         const k=Object.keys(IN_MAP).find(k=>IN_MAP[k]===r.id);
         if(!k||totals[k]===undefined)return r;
         return{...r,v:r.v.map((v,i)=>i===wi?totals[k]:v)};
       }));
-      // Store invoicing total for this week (sum of positive inflows)
       const invTotal=Object.values(totals).reduce((s,v)=>s+(v>0?v:0),0);
       setInvTotals(prev=>{
         const next={...prev,[wi]:invTotal};
-        // Recalc Invoice to Cash Timing if ANB already synced
         if(anbTotals[wi]!==undefined){
           const timing=anbTotals[wi]-invTotal;
           setInflows(prev2=>prev2.map(r=>r.id==="inv"?{...r,v:r.v.map((v,i)=>i===wi?timing:v)}:r));
@@ -355,17 +354,14 @@ export default function App() {
       });
       setSyncMsg(`✓ Invoicing synced — ${weeks[wi].s}–${weeks[wi].e}`);
     } else {
-      // Apply to outflows
       setOutflows(prev=>prev.map(s=>({...s,rows:s.rows.map(r=>{
         const k=Object.keys(OUT_MAP).find(k=>OUT_MAP[k]===r.id);
         if(!k||totals[k]===undefined)return r;
         return{...r,v:r.v.map((v,i)=>i===wi?Math.abs(totals[k]):v)};
       })})));
-      // Store ANB deposit total (sum of negative amounts = money going out = deposits received)
       const anbTotal=rows.reduce((s,r)=>s+(r._amt&&r._amt>0?r._amt:0),0);
       setAnbTotals(prev=>{
         const next={...prev,[wi]:anbTotal};
-        // Recalc Invoice to Cash Timing if Invoicing already synced
         if(invTotals[wi]!==undefined){
           const timing=anbTotal-invTotals[wi];
           setInflows(prev2=>prev2.map(r=>r.id==="inv"?{...r,v:r.v.map((v,i)=>i===wi?timing:v)}:r));
@@ -430,7 +426,6 @@ export default function App() {
     else setInvRules(prev=>prev.filter(r=>r.id!==id));
   };
 
-  // ── STYLES ──
   const th=fc=>({padding:"4px 8px",textAlign:"right",minWidth:90,fontSize:11,fontWeight:600,background:fc?"#fef9ec":"#eff6ff",borderLeft:"1px solid #e2e8f0",color:fc?"#b45309":"#1d4ed8",whiteSpace:"nowrap"});
   const td=fc=>({padding:"3px 8px",textAlign:"right",fontSize:12,background:fc?"#fffdf5":"#f8fbff",borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap",cursor:"pointer",color:"#1e293b"});
   const lbl=(sub,bold,color,bg)=>({padding:`3px 8px 3px ${sub?"20px":"8px"}`,fontSize:12,fontWeight:bold?700:400,color:color||(sub?"#64748b":"#1e293b"),minWidth:200,position:"sticky",left:0,background:bg||"#fff",zIndex:2,borderRight:"2px solid #e2e8f0",whiteSpace:"nowrap"});
@@ -460,7 +455,6 @@ export default function App() {
     return rows;
   },[fcSnapshot,inflows,outflows,varWeeks]);
 
-  // ── REVIEW MODAL RENDER ──
   const renderReviewModal=()=>{
     if(!reviewModal)return null;
     const {type,wi,rows}=reviewModal;
@@ -469,7 +463,6 @@ export default function App() {
     const confColor=c=>c==="mapped"?"#16a34a":c==="auto"?"#2563eb":c==="unknown"?"#dc2626":"#94a3b8";
     const confLabel=c=>c==="mapped"?"Manual":c==="auto"?"Auto":c==="unknown"?"⚠ Unmapped":"Skip";
 
-    // Group totals by line for summary
     const totals={};
     rows.forEach(r=>{if(!r._line||!r._amt)return;totals[r._line]=(totals[r._line]||0)+r._amt;});
 
@@ -486,7 +479,6 @@ export default function App() {
           )
         ),
 
-        // Summary totals by line
         el("div",{style:{background:"#f8fafc",borderRadius:8,padding:"10px 12px",marginBottom:14,border:"1px solid #e2e8f0"}},
           el("div",{style:{fontSize:11,fontWeight:700,color:S.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Summary by Line"),
           el("div",{style:{display:"flex",flexWrap:"wrap",gap:6}},
@@ -499,7 +491,6 @@ export default function App() {
           )
         ),
 
-        // Transaction table
         el("div",{style:{overflowX:"auto"}},
           el("table",{style:{borderCollapse:"collapse",width:"100%",fontSize:11}},
             el("thead",null,el("tr",{style:{background:"#f8fafc",borderBottom:"2px solid #e2e8f0"}},
@@ -609,10 +600,8 @@ export default function App() {
       el(KPI,{label:"Projected ending balance",value:fmt(endBal[NW-1]),sub:`(${weeks[NW-1].e})`,color:S.yellow,bg:S.yBg})
     ),
 
-    // Review modal
     renderReviewModal(),
 
-    // Mark as actual modal
     markModal!==null&&modal(
       el("div",null,
         el("div",{style:{fontSize:24,marginBottom:8}},"✅"),
@@ -630,41 +619,40 @@ export default function App() {
     tab==="variance"&&el("div",{style:{padding:16}},
       !fcSnapshot
         ?el("div",{style:{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:32,textAlign:"center",color:S.muted}},
-            el("div",{style:{fontSize:32,marginBottom:8}},"🔮"),
-            el("div",{style:{fontWeight:600,marginBottom:4}},"No forecast data yet"),
-            el("div",{style:{fontSize:12}},"Click Sync Forecasts to load.")
-          )
-        :el("div",null,
-            el("div",{style:{fontWeight:700,fontSize:15,marginBottom:12}},"Forecast vs Actual — Last actual weeks"),
-            el("div",{style:{overflowX:"auto"}},
-              el("table",{style:{borderCollapse:"collapse",minWidth:"100%",fontSize:12}},
-                el("thead",null,el("tr",{style:{background:"#f8fafc"}},
-                  el("th",{style:{...lbl(false,false,S.muted),fontSize:11,padding:"6px 8px",fontWeight:600}},"Line"),
-                  ...varWeeks.flatMap(w=>[
-                    el("th",{key:`f${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:78,fontSize:10,fontWeight:600,color:S.purple,background:S.pBg,borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},`Fcst ${w.s}`),
-                    el("th",{key:`a${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:78,fontSize:10,fontWeight:600,color:"#1d4ed8",background:S.bBg,borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},`Act ${w.s}`),
-                    el("th",{key:`d${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:65,fontSize:10,fontWeight:600,color:S.muted,background:"#f8fafc",borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},"Δ"),
-                  ])
-                )),
-                el("tbody",null,...varRows.map((row,ri)=>
-                  el("tr",{key:ri,style:{borderBottom:"1px solid #f1f5f9",background:"#fff"}},
-                    el("td",{style:lbl(false,false)},row.label),
-                    ...varWeeks.flatMap(w=>{
-                      const fc=row.fc[w.i]||null,ac=row.act[w.i]||null;
-                      const delta=(ac||0)-(fc||0);
-                      const good=row.type==="in"?delta>=0:delta<=0;
-                      const dc=delta===0||(!ac&&!fc)?S.muted:good?S.green:S.red;
-                      return[
-                        el("td",{key:`f${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:S.pBg,borderLeft:"1px solid #e2e8f0",color:S.purple}},fmt(fc)),
-                        el("td",{key:`a${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:S.bBg,borderLeft:"1px solid #e2e8f0",color:"#1d4ed8",fontWeight:500}},fmt(ac)),
-                        el("td",{key:`d${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:"#f8fafc",borderLeft:"1px solid #e2e8f0",color:dc,fontWeight:600,fontSize:11}},fmtD(delta)),
-                      ];
-                    })
-                  )
-                ))
-              )
+          el("div",{style:{fontSize:32,marginBottom:8}},"🔮"),
+          el("div",{style:{fontWeight:600,marginBottom:4}},"No forecast data yet"),
+          el("div",{style:{fontSize:12}},"Click Sync Forecasts to load.")
+        ):el("div",null,
+          el("div",{style:{fontWeight:700,fontSize:15,marginBottom:12}},"Forecast vs Actual — Last actual weeks"),
+          el("div",{style:{overflowX:"auto"}},
+            el("table",{style:{borderCollapse:"collapse",minWidth:"100%",fontSize:12}},
+              el("thead",null,el("tr",{style:{background:"#f8fafc"}},
+                el("th",{style:{...lbl(false,false,S.muted),fontSize:11,padding:"6px 8px",fontWeight:600}},"Line"),
+                ...varWeeks.flatMap(w=>[
+                  el("th",{key:`f${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:78,fontSize:10,fontWeight:600,color:S.purple,background:S.pBg,borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},`Fcst ${w.s}`),
+                  el("th",{key:`a${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:78,fontSize:10,fontWeight:600,color:"#1d4ed8",background:S.bBg,borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},`Act ${w.s}`),
+                  el("th",{key:`d${w.i}`,style:{padding:"4px 8px",textAlign:"right",minWidth:65,fontSize:10,fontWeight:600,color:S.muted,background:"#f8fafc",borderLeft:"1px solid #e2e8f0",whiteSpace:"nowrap"}},"Δ"),
+                ])
+              )),
+              el("tbody",null,...varRows.map((row,ri)=>
+                el("tr",{key:ri,style:{borderBottom:"1px solid #f1f5f9",background:"#fff"}},
+                  el("td",{style:lbl(false,false)},row.label),
+                  ...varWeeks.flatMap(w=>{
+                    const fc=row.fc[w.i]||null,ac=row.act[w.i]||null;
+                    const delta=(ac||0)-(fc||0);
+                    const good=row.type==="in"?delta>=0:delta<=0;
+                    const dc=delta===0||(!ac&&!fc)?S.muted:good?S.green:S.red;
+                    return[
+                      el("td",{key:`f${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:S.pBg,borderLeft:"1px solid #e2e8f0",color:S.purple}},fmt(fc)),
+                      el("td",{key:`a${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:S.bBg,borderLeft:"1px solid #e2e8f0",color:"#1d4ed8",fontWeight:500}},fmt(ac)),
+                      el("td",{key:`d${w.i}`,style:{padding:"3px 8px",textAlign:"right",background:"#f8fafc",borderLeft:"1px solid #e2e8f0",color:dc,fontWeight:600,fontSize:11}},fmtD(delta)),
+                    ];
+                  })
+                )
+              ))
             )
           )
+        )
     ),
 
     tab==="chart"&&el("div",{style:{padding:16}},
@@ -719,3 +707,4 @@ export default function App() {
     )
   );
 }
+
